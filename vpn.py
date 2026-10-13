@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# VPN Key Generator — Premium Edition v5.3
 import urllib.request
 import urllib.error
 import json
@@ -10,9 +9,8 @@ import socket
 import time
 from datetime import datetime
 
-os.environ["TERM"] = "xterm-256color"
 VERSION = "5.3 ✨ PREMIUM"
-FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
+FAV_FILE = os.path.join(os.path.expanduser("~"), "vpn-key-bot", "favorites.txt")
 
 class Colors:
     P = "\033[95m"
@@ -24,58 +22,52 @@ class Colors:
     D = "\033[90m"
     rst = "\033[0m"
 
+C = Colors()
+
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
     "2": ("Shadowmere Base64", "https://shadowmere.xyz/api/b64sub/", "b64"),
-    "3": ("VLESS List", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Splitted-By-Protocol/vless.txt", "txt")
+    "3": ("VLESS List", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt", "txt")
 }
 
-# မြန်မာနိုင်ငံနှင့် နီးစပ်ရာ နိုင်ငံများ (ဦးစားပေးအစီအစဉ်)
 NEARBY_COUNTRIES = [
-    "singapore", "malaysia", "thailand", "vietnam", 
-    "indonesia", "philippines", "hong kong", "hongkong", 
+    "singapore", "malaysia", "thailand", "vietnam",
+    "indonesia", "philippines", "hong kong", "hongkong",
     "japan", "korea", "india", "australia"
 ]
 
-def clear(): os.system("clear")
-C = Colors()
+def clear():
+    os.system("clear")
 
 def header():
     clear()
-    fav_count = len(load_favorites())
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"{C.P}╔══════════════════════════════════════════════════╗{C.rst}")
-    print(f"{C.P}║{C.rst}{C.Y}  ✨ VPN KEY GENERATOR PREMIUM v{VERSION.split()[1]} ✨{C.rst}{C.P}║{C.rst}")
-    print(f"{C.P}╠══════════════════════════════════════════════════╣{C.rst}")
-    print(f"{C.P}║{C.rst}  {C.C}📡 Status:{C.rst} Online ✅  |  {C.C}⭐ Favorites:{C.rst} {fav_count}  {C.D}{now}{C.rst}{C.P}║{C.rst}")
-    print(f"{C.P}╚══════════════════════════════════════════════════╝{C.rst}\n")
+    print(f"{C.P}{'='*58}{C.rst}")
+    print(f"{C.P}║{C.rst}  ✨ VPN KEY GENERATOR  {VERSION}")
+    print(f"{C.P}╠{'═'*56}╣{C.rst}")
+    print(f"{C.P}║{C.rst}  📡 Status: Online  |  🕐 {now}")
+    print(f"{C.P}{'='*58}{C.rst}\n")
 
 def divider(title=""):
-    print(f"{C.C}─── {title} {'─'*(50-len(title))}{C.rst}" if title else f"{C.D}─"*52+C.rst)
+    if title:
+        print(f"{C.C}--- {title} {'-'*(50-len(title))}{C.rst}")
+    else:
+        print(f"{C.D}{'-'*52}{C.rst}")
 
-def load_favorites():
-    if not os.path.exists(FAV_FILE): return []
-    try:
-        with open(FAV_FILE,"r",encoding="utf-8") as f:
-            return [line.strip() for line in f if line.strip()]
-    except: return []
-
-def save_favorite(name, key, ping="", uptime=""):
-    favs = load_favorites()
-    entry = f"{name}|{key}|{ping}|{uptime}"
-    if entry not in favs:
-        try:
-            with open(FAV_FILE,"w",encoding="utf-8") as f:
-                f.write("\n".join(favs+[entry]))
-            return True
-        except: return False
-    return False
-
-def copy_to_clipboard(text):
-    try:
-        with open("/dev/clipboard","w") as f: f.write(text)
-        return True
-    except: return False
+def get_flag_emoji(name):
+    name = name.lower()
+    flags = {
+        "singapore": "🇸🇬", "malaysia": "🇲🇾", "thailand": "🇹🇭",
+        "vietnam": "🇻🇳", "indonesia": "🇮🇩", "philippines": "🇵🇭",
+        "hongkong": "🇭🇰", "hong kong": "🇭🇰", "japan": "🇯🇵",
+        "korea": "🇰🇷", "india": "🇮🇳", "australia": "🇦🇺",
+        "germany": "🇩🇪", "finland": "🇫🇮", "usa": "🇺🇸",
+        "united states": "🇺🇸", "uk": "🇬🇧", "russia": "🇷🇺"
+    }
+    for k, v in flags.items():
+        if k in name:
+            return v
+    return "🌐"
 
 def get_uptime_percent(ping_ms):
     if ping_ms < 100:
@@ -110,389 +102,301 @@ def test_ping(host, port=443, timeout=2):
 def extract_host_port(key):
     try:
         if "://" in key:
-            import urllib.parse
-            parsed = urllib.parse.urlparse(key)
-            return parsed.hostname or "", parsed.port or 443
-    except: pass
-    try:
-        if "@" in key and ":" in key.split("@")[-1]:
-            part = key.split("@")[-1]
-            h, p = part.split(":")
-            return h.strip(), p.strip()
-    except: pass
-    return "", ""
-
-def get_flag_emoji(name):
-    name = name.lower()
-    flags = {
-        "singapore": "🇸🇬", "malaysia": "🇲🇾", "thailand": "🇹🇭",
-        "vietnam": "🇻🇳", "indonesia": "🇮🇩", "philippines": "🇵🇭",
-        "hongkong": "🇭🇰", "hong kong": "🇭🇰", "japan": "🇯🇵",
-        "korea": "🇰🇷", "india": "🇮🇳", "australia": "🇦🇺",
-        "germany": "🇩🇪", "finland": "🇫🇮", "usa": "🇺🇸",
-        "united states": "🇺🇸", "uk": "🇬🇧", "russia": "🇷🇺"
-    }
-    for k, v in flags.items():
-        if k in name: return v
-    return "🌐"
+            from urllib.parse import urlparse
+            p = urlparse(key)
+            return p.hostname or "", p.port or 443
+    except:
+        return "", 443
 
 def get_country_priority(name):
-    """နိုင်ငံအပေါ်မူတည်ပြီး ဦးစားပေးအမှတ်ပေး (နီးလေ ပိုကောင်းလေ)"""
     name = name.lower()
     for idx, country in enumerate(NEARBY_COUNTRIES):
         if country in name:
-            return 100 - (idx * 5)  # စင်ကာပူ = 100, မလေးရှား = 95, ထိုင်း = 90...
-    return 30  # ဝေးတဲ့နိုင်ငံများ
+            return 100 - (idx * 5)
+    return 30
 
 def calculate_score(ping_ms, country_priority, uptime_pct):
-    """အကိုက်ညီဆုံးဖြစ်အောင် အမှတ်တွက်ပေးတယ် — အမှတ်များလေ ပိုကောင်းလေ"""
-    ping_score = max(0, 100 - ping_ms // 2)  # Ping နည်းလေ အမှတ်များလေ
-    total = int((country_priority * 0.5) + (ping_score * 0.35) + (uptime_pct * 0.15))
-    return total
-
-def build_share_text(name, key, ping_info="", uptime_pct="", fetched_time=""):
-    ping_clean = ping_info.replace(C.G,"").replace(C.Y,"").replace(C.R,"").replace(C.rst,"")
-    uptime_clean = uptime_pct.replace(C.G,"").replace(C.Y,"").replace(C.R,"").replace(C.rst,"")
-    flag = get_flag_emoji(name)
-    return f"""{flag} VPN Server — {name}
-⚡ အခြေအနေ: {uptime_clean}
-📶 Ping: {ping_clean}
-🕒 ရယူချိန်: {fetched_time}
-
-🔑 Key:
-{key}
-
-✨ VPN Key Generator Premium
-#VPN #FreeVPN #InternetFreedom"""
+    ping_score = max(0, 100 - ping_ms // 2)
+    return int((country_priority * 0.5) + (ping_score * 0.35) + (uptime_pct * 0.15))
 
 def fetch_json(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            content = r.read().decode().strip()
-            try:
-                data = json.loads(content)
-                if isinstance(data, list): return data
-            except: pass
-            lines = content.splitlines()
-            res = []
-            for line in lines:
-                line = line.strip()
-                if line:
-                    try: res.append(json.loads(line))
-                    except: pass
-            return res if res else None
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return json.loads(r.read().decode())
     except Exception as e:
-        print(f"  {C.R}❌ JSON: {str(e)[:40]}{C.rst}")
+        print(f"  {C.R}❌ Error: {str(e)[:40]}{C.rst}")
         return None
 
 def fetch_b64(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return [l.strip() for l in base64.b64decode(r.read()).decode().splitlines() if l.strip()]
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return base64.b64decode(r.read()).decode().splitlines()
     except Exception as e:
-        print(f"  {C.R}❌ Base64: {str(e)[:40]}{C.rst}")
+        print(f"  {C.R}❌ Error: {str(e)[:40]}{C.rst}")
         return None
 
 def fetch_txt(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return [l.strip() for l in r.read().decode().splitlines() if l.strip() and not l.startswith("#")]
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.read().decode().splitlines()
     except Exception as e:
-        print(f"  {C.R}❌ TXT: {str(e)[:40]}{C.rst}")
+        print(f"  {C.R}❌ Error: {str(e)[:40]}{C.rst}")
         return None
 
 def parse_key_info(key):
-    if not key or len(key)<10: return None, None
+    if not key or len(key) < 10:
+        return None, None
     name = "Server"
     if "#" in key:
         try:
-            import urllib.parse
-            name = urllib.parse.unquote(key.split("#")[-1])
-        except: pass
-    if key.startswith("vless://") or key.startswith("ss://"):
-        return name, key
-    return None, None
+            from urllib.parse import unquote
+            name = unquote(key.split("#")[-1])
+        except:
+            pass
+    return name, key
 
 def get_all_keys():
     all_keys = []
-    for sid in ["1","2","3"]:
+    for sid in ["1", "2", "3"]:
         name, url, dtype = API_LIST[sid]
-        data = {"json":fetch_json,"b64":fetch_b64,"txt":fetch_txt}[dtype](url)
-        if not data: continue
-        if dtype=="json" and isinstance(data,list):
-            for item in data:
-                if isinstance(item,dict):
-                    key = item.get("url") or item.get("link") or ""
+        data = None
+        if dtype == "json":
+            data = fetch_json(url)
+            if data and isinstance(data, list):
+                for item in data:
+                    k = item.get("url") or item.get("link") or ""
                     n = item.get("name") or item.get("remarks") or "Server"
-                    if key and (key.startswith("vless://") or key.startswith("ss://")):
-                        all_keys.append({"name":n,"key":key,"source":name})
-        elif dtype in ["b64","txt"] and isinstance(data,list):
-            for k in data:
-                n, vk = parse_key_info(k)
-                if vk: all_keys.append({"name":n,"key":vk,"source":name})
+                    if k and ("vless://" in k or "ss://" in k):
+                        all_keys.append({"name": n, "key": k, "source": name})
+        elif dtype == "b64":
+            lines = fetch_b64(url)
+            if lines:
+                for line in lines:
+                    n, k = parse_key_info(line.strip())
+                    if k:
+                        all_keys.append({"name": n, "key": k, "source": name})
+        elif dtype == "txt":
+            lines = fetch_txt(url)
+            if lines:
+                for line in lines:
+                    n, k = parse_key_info(line.strip())
+                    if k:
+                        all_keys.append({"name": n, "key": k, "source": name})
     return all_keys
 
-def show_key_detail(item, ping_ms, ping_str):
+def show_result(item, ping_ms, ping_str):
     fetched_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    uptime_pct_val, uptime_pct_str = get_uptime_percent(ping_ms)
-    flag = get_flag_emoji(item['name'])
+    _, uptime_str = get_uptime_percent(ping_ms)
+    flag = get_flag_emoji(item["name"])
     
-    while True:
-        header()
-        divider(f"{flag} {item['name']}")
-        print(f"  {C.C}📍 အရင်းအမြစ်:{C.rst} {item['source']}")
-        print(f"  {C.Y}⚡ အခြေအနေ:{C.rst} {uptime_pct_str}")
-        print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
-        print(f"  {C.D}🕒 ရယူချိန်:{C.rst} {fetched_time}")
-        divider()
-        print(f"  {C.G}🔑 Key:{C.rst}\n{C.W}{item['key']}{C.rst}")
-        divider()
-        share_text = build_share_text(item['name'], item['key'], ping_str, uptime_pct_str, fetched_time)
-        print(f"\n  {C.C}[1]{C.rst} Key ကူးယူပါ")
-        print(f"  {C.C}[2]{C.rst} Share ဖို့ အကုန်ကူးယူပါ")
-        print(f"  {C.C}[F]{C.rst} အကြိုက်ဆုံးထဲသိမ်းပါ")
-        print(f"  {C.C}[Q]{C.rst} ပြန်သွားမည်")
-        sel = input("  ▶ ရွေးပါ : ").strip().upper()
-        if sel=="1":
-            copy_to_clipboard(item['key'])
-            print(f"  {C.G}✅ Key ကူးယူပြီးပါပြီ!{C.rst}\n"); input("  Enter...")
-        elif sel=="2":
-            copy_to_clipboard(share_text)
-            print(f"  {C.G}✅ Share အကုန်ကူးယူပြီးပါပြီ! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}\n"); input("  Enter...")
-        elif sel=="F":
-            save_favorite(item['name'], item['key'], ping_str, fetched_time)
-            print(f"  {C.G}✅ အကြိုက်ဆုံးထဲ သိမ်းပြီးပါပြီ{C.rst}\n"); input("  Enter...")
-        elif sel=="Q":
-            break
-
-def find_best_key():
-    header()
-    print(f"  {C.Y}🔍 အမြန်ဆုံး Server ကို ရှာဖွေနေသည်...{C.rst}\n")
-    all_keys = get_all_keys()
-    if not all_keys:
-        input(f"  {C.R}မရပါ။ Enter...{C.rst}"); return
+    divider(f"{flag} {item['name']}")
+    print(f"  📌 Source: {item['source']}")
+    print(f"  ⚡ Status: {uptime_str}")
+    print(f"  📶 Ping: {ping_str}")
+    print(f"  🕐 Fetched: {fetched_time}")
+    divider()
+    print(f"  🔑 Key:\n  {C.W}{item['key']}{C.rst}\n")
+    print(f"  {C.C}[1]{C.rst} Copy Key    {C.C}[2]{C.rst} Save to Favorites    {C.C}[Q]{C.rst} Back")
     
-    print(f"  {C.C}စုစုပေါင်း Key {len(all_keys)} လုံး တွေ့ရှိခဲ့သည် ✅{C.rst}")
-    print(f"  {C.Y}⏳ တစ်ခုချင်းစီ စမ်းသပ်နေသည်...{C.rst}\n")
-    
-    best_key = None
-    best_ping = 9999
-    
-    for i, item in enumerate(all_keys, 1):
-        host, port = extract_host_port(item['key'])
-        if not host: continue
-        flag = get_flag_emoji(item['name'])
-        sys.stdout.write(f"  {flag} {i}/{len(all_keys)} — {item['name'][:20]}...")
-        sys.stdout.flush()
-        ping_ms, ping_str = test_ping(host, port, timeout=1.5)
-        if ping_ms < best_ping:
-            best_ping = ping_ms
-            best_key = item.copy()
-            best_key["ping_ms"] = ping_ms
-            best_key["ping_str"] = ping_str
-            _, uptime_str = get_uptime_percent(ping_ms)
-            sys.stdout.write(f"  {C.G}✅ အသစ်အကောင်းဆုံး! {uptime_str}  {ping_str}{C.rst}\n")
-        else:
-            sys.stdout.write(f"  {ping_str}\n")
-    
-    if not best_key:
-        input(f"\n  {C.R}အလုပ်လုပ်နိုင်တဲ့ Server မတွေ့ပါ။ Enter...{C.rst}"); return
-    
-    print(f"\n{C.G}══════════════════════════════════════════════════{C.rst}")
-    print(f"{C.G}🏆 အမြန်ဆုံး Server ကို တွေ့ရှိခဲ့သည်!{C.rst}")
-    print(f"{C.G}══════════════════════════════════════════════════{C.rst}\n")
-    
-    show_key_detail(best_key, best_key["ping_ms"], best_key["ping_str"])
+    sel = input("  Choose: ").strip().upper()
+    if sel == "1":
+        try:
+            import subprocess
+            subprocess.run(["termux-clipboard-set", item["key"]])
+            print(f"  {C.G}✅ Copied to clipboard!{C.rst}")
+        except:
+            print(f"  Key: {item['key']}")
+    elif sel == "2":
+        try:
+            os.makedirs(os.path.dirname(FAV_FILE), exist_ok=True)
+            with open(FAV_FILE, "a", encoding="utf-8") as f:
+                f.write(f"{item['name']}|{item['key']}|{ping_str}|{fetched_time}\n")
+            print(f"  {C.G}✅ Saved!{C.rst}")
+        except Exception as e:
+            print(f"  {C.R}❌ Save failed: {e}{C.rst}")
+    input("\n  Press Enter to continue...")
 
 def find_best_for_me():
     header()
-    print(f"  {C.Y}🎯 သင့်အတွက် အသင့်တော်ဆုံး Server ကို ရှာဖွေနေသည်...{C.rst}")
-    print(f"  {C.D}📍 မြန်မာနိုင်ငံမှ အနီးဆုံး + အမြန်ဆုံးကို ရွေးချင်နေသည်...{C.rst}\n")
+    print(f"  🎯 Finding best for your connection...")
+    print(f"  📍 Prioritizing: SG > MY > TH > VN > ID > PH > HK > JP > KR > IN > AU\n")
     
     all_keys = get_all_keys()
     if not all_keys:
-        input(f"  {C.R}မရပါ။ Enter...{C.rst}"); return
+        input(f"  {C.R}No keys found. Press Enter...{C.rst}")
+        return
     
-    print(f"  {C.C}စုစုပေါင်း Key {len(all_keys)} လုံး ကို စစ်ဆေးနေသည် ✅{C.rst}")
-    print(f"  {C.Y}⏳ အကဲဖြတ်နေသည်... (တည်နေရာ + အမြန်နှုန်း + တည်ငြိမ်မှု){C.rst}\n")
+    scored = []
+    print(f"  Testing {len(all_keys)} servers...\n")
     
-    scored_keys = []
-    
-    for i, item in enumerate(all_keys, 1):
-        host, port = extract_host_port(item['key'])
-        if not host: continue
-        flag = get_flag_emoji(item['name'])
-        sys.stdout.write(f"  {flag} {i}/{len(all_keys)} — {item['name'][:20]}...စစ်ဆေးနေသည်")
-        sys.stdout.flush()
+    for idx, item in enumerate(all_keys, 1):
+        host, port = extract_host_port(item["key"])
+        if not host:
+            continue
+        flag = get_flag_emoji(item["name"])
+        print(f"  {flag} {idx}/{len(all_keys)}: {item['name'][:25]}...", end=" ")
         
         ping_ms, ping_str = test_ping(host, port, timeout=1.5)
         uptime_pct, _ = get_uptime_percent(ping_ms)
-        country_priority = get_country_priority(item['name'])
-        score = calculate_score(ping_ms, country_priority, uptime_pct)
+        country_prio = get_country_priority(item["name"])
+        score = calculate_score(ping_ms, country_prio, uptime_pct)
         
-        scored_keys.append({
-            **item,
-            "ping_ms": ping_ms,
-            "ping_str": ping_str,
-            "uptime_pct": uptime_pct,
-            "country_priority": country_priority,
-            "score": score
-        })
-        
-        sys.stdout.write(f"  အမှတ် {score}/100 ✅\n")
+        scored.append({**item, "ping_ms": ping_ms, "ping_str": ping_str, "score": score})
+        print(f"Score: {score}/100")
     
-    if not scored_keys:
-        input(f"\n  {C.R}အသင့်တော်ဆုံး Server မတွေ့ပါ။ Enter...{C.rst}"); return
+    if not scored:
+        input(f"\n  {C.R}No working server found. Press Enter...{C.rst}")
+        return
     
-    # အမှတ်အများဆုံးကို ရွေးမယ်
-    scored_keys.sort(key=lambda x: x["score"], reverse=True)
-    best = scored_keys[0]
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    best = scored[0]
     
-    print(f"\n{C.G}╔══════════════════════════════════════════════════╗{C.rst}")
-    print(f"{C.G}║{C.rst}  🎯 သင့်အတွက် အသင့်တော်ဆုံး Server ကို တွေ့ရှိခဲ့သည်!{C.G}║{C.rst}")
-    print(f"{C.G}╚══════════════════════════════════════════════════╝{C.rst}")
-    print(f"\n  {C.Y}📌 အကဲဖြတ်ချက်:{C.rst}")
-    print(f"     • တည်နေရာ နီးစပ်မှု  : {C.G}{best['country_priority']}{C.rst}/100")
-    print(f"     • တုံ့ပြန်မှု မြန်နှုန်း  : {best['ping_str']}")
-    print(f"     • အွန်လိုင်း တည်ငြိမ်မှု: {C.G}{best['uptime_pct']}%{C.rst}")
-    print(f"     ═══════════════════════════════")
-    print(f"     {C.G}စုစုပေါင်း အကိုက်ညီမှု အမှတ်: {best['score']}/100{C.rst}\n")
+    print(f"\n{C.G}{'='*58}{C.rst}")
+    print(f"{C.G}  🎯 BEST MATCH FOUND! Score: {best['score']}/100{C.rst}")
+    print(f"{C.G}{'='*58}{C.rst}\n")
     
-    show_key_detail(best, best["ping_ms"], best["ping_str"])
+    show_result(best, best["ping_ms"], best["ping_str"])
 
-def find_browse_keys():
+def find_fastest():
     header()
-    print(f"  {C.Y}🔍 ဒေတာရှာဖွေနေသည်...{C.rst}\n")
-    all_keys = []; sources = []
-    for sid in ["1","2","3"]:
-        name, url, dtype = API_LIST[sid]
-        print(f"  ⬜ {name}...", end="", flush=True)
-        data = {"json":fetch_json,"b64":fetch_b64,"txt":fetch_txt}[dtype](url)
-        print(f" {C.G}✅{C.rst}" if data else f" {C.R}❌{C.rst}")
-        if data: sources.append((name,data,dtype))
-    if not sources:
-        input(f"\n  {C.R}မရပါ။ Enter နှိပ်ပါ...{C.rst}"); return
-    for sname, data, dtype in sources:
-        cnt=0
-        if dtype=="json" and isinstance(data,list):
-            for item in data:
-                if isinstance(item,dict):
-                    key = item.get("url") or item.get("link") or ""
-                    n = item.get("name") or item.get("remarks") or f"Server {cnt+1}"
-                    if key and (key.startswith("vless://") or key.startswith("ss://")):
-                        all_keys.append({"name":n,"key":key,"source":sname}); cnt+=1
-        elif dtype in ["b64","txt"] and isinstance(data,list):
-            for k in data:
-                n, vk = parse_key_info(k)
-                if vk: all_keys.append({"name":n,"key":vk,"source":sname}); cnt+=1
-        print(f"     → {sname}: Key {cnt} လုံး")
+    print(f"  🏆 Finding fastest server...\n")
+    
+    all_keys = get_all_keys()
     if not all_keys:
-        input(f"\n  {C.R}Key မတွေ့ပါ။ Enter...{C.rst}"); return
-    print(f"\n  {C.G}စုစုပေါင်း Key {len(all_keys)} လုံး ✅{C.rst}\n")
-    idx=0
-    while True:
-        item=all_keys[idx]
-        fetched_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        flag = get_flag_emoji(item['name'])
-        header()
-        divider(f"{flag} Key #{idx+1}/{len(all_keys)}")
-        host, port = extract_host_port(item['key'])
-        print(f"  {C.G}နာမည်:{C.rst} {item['name']}")
-        print(f"  {C.C}အရင်းအမြစ်:{C.rst} {item['source']}")
-        print(f"  {C.Y}📶 Ping:{C.rst} {C.D}⏳ စမ်းနေသည်...{C.rst}", end="\r", flush=True)
-        ping_ms, ping_str = test_ping(host, port) if host else (0, f"{C.D}မရနိုင်ပါ{C.rst}")
-        _, uptime_str = get_uptime_percent(ping_ms)
-        print(f"  {C.Y}⚡ အခြေအနေ:{C.rst} {uptime_str}    ")
-        print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
-        print(f"  {C.D}🕒 ရယူချိန်:{C.rst} {fetched_time}")
-        divider()
-        print(f"  {C.Y}🔑 Key:{C.rst}\n{C.W}{item['key']}{C.rst}")
-        divider()
-        share_text = build_share_text(item['name'], item['key'], ping_str, uptime_str, fetched_time)
-        print(f"\n  {C.C}[1]{C.rst} Key ကူး   {C.C}[2]{C.rst} Share ကူး   {C.C}[F]{C.rst}သိမ်း")
-        print(f"  {C.C}[←]ယခင်  {C.C}[→]နောက်  {C.C}[Q]{C.rst}ပြန်")
-        sel = input("  ▶ : ").strip().upper()
-        if sel=="1":
-            copy_to_clipboard(item['key'])
-            print(f"  {C.G}✅ Key ကူးယူပြီး{C.rst}\n"); input("  Enter...")
-        elif sel=="2":
-            copy_to_clipboard(share_text)
-            print(f"  {C.G}✅ Share အကုန်ကူးယူပြီး! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}\n"); input("  Enter...")
-        elif sel=="F":
-            save_favorite(item['name'], item['key'], ping_str, fetched_time)
-            print(f"  {C.G}✅ သိမ်းပြီး{C.rst}\n"); input("  Enter...")
-        elif sel=="B" or sel=="P" or sel=="":
-            if idx>0: idx-=1
-        elif sel=="N":
-            if idx+1<len(all_keys): idx+=1
-        elif sel=="Q":
-            break
-
-def favorites_menu():
-    while True:
-        header()
-        favs=load_favorites()
-        print(f"  {C.Y}⭐ အကြိုက်ဆုံးများ{C.rst}\n")
-        divider()
-        if not favs:
-            print(f"  {C.D}မရှိသေးပါ။ Key ရတဲ့အခါ [F] နှိပ်ပါ။{C.rst}")
+        input(f"  {C.R}No keys found. Press Enter...{C.rst}")
+        return
+    
+    best_ping = 9999
+    best_server = None
+    
+    for idx, item in enumerate(all_keys, 1):
+        host, port = extract_host_port(item["key"])
+        if not host:
+            continue
+        flag = get_flag_emoji(item["name"])
+        print(f"  {flag} {idx}/{len(all_keys)}: {item['name'][:25]}...", end=" ")
+        
+        ping_ms, ping_str = test_ping(host, port, timeout=1.5)
+        
+        if ping_ms < best_ping:
+            best_ping = ping_ms
+            best_server = item
+            print(f"{C.G}NEW BEST! {ping_str}{C.rst}")
         else:
-            for i,e in enumerate(favs,1):
-                parts = e.split("|",3)
-                n = parts[0] if len(parts)>0 else "Server"
-                k = parts[1] if len(parts)>1 else ""
-                p = parts[2] if len(parts)>2 else ""
-                t = parts[3] if len(parts)>3 else ""
-                flag = get_flag_emoji(n)
-                print(f"  {C.C}[{i}]{C.rst} {flag} {n}")
-                if p: print(f"      📶 {p}")
-                if t: print(f"      🕒 {t}")
-                print(f"      {C.W}{k}{C.rst}")
-                share_text = build_share_text(n, k, p, "", t)
-                print(f"      {C.C}[1]Key ကူး  [2]Share ကူး{C.rst}")
-                act = input(f"      ▶ : ").strip()
-                if act=="1":
-                    copy_to_clipboard(k)
-                    print(f"        {C.G}✅ Key ကူးယူပြီး{C.rst}")
-                elif act=="2":
-                    copy_to_clipboard(share_text)
-                    print(f"        {C.G}✅ Share အကုန်ကူးယူပြီး{C.rst}")
+            print(ping_str)
+    
+    if not best_server:
+        input(f"\n  {C.R}No working server found. Press Enter...{C.rst}")
+        return
+    
+    print(f"\n{C.G}{'='*58}{C.rst}")
+    print(f"{C.G}  🏆 FASTEST SERVER FOUND!{C.rst}")
+    print(f"{C.G}{'='*58}{C.rst}\n")
+    
+    show_result(best_server, best_ping, test_ping(extract_host_port(best_server["key"])[0])[1])
+
+def browse_all():
+    header()
+    print(f"  📋 Loading all keys...\n")
+    
+    all_keys = get_all_keys()
+    if not all_keys:
+        input(f"  {C.R}No keys found. Press Enter...{C.rst}")
+        return
+    
+    idx = 0
+    while True:
+        item = all_keys[idx]
+        fetched_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        flag = get_flag_emoji(item["name"])
+        host, port = extract_host_port(item["key"])
+        ping_ms, ping_str = test_ping(host, port, timeout=2)
+        _, uptime_str = get_uptime_percent(ping_ms)
+        
+        header()
+        divider(f"{flag} Server {idx+1}/{len(all_keys)}")
+        print(f"  📛 Name: {item['name']}")
+        print(f"  📌 Source: {item['source']}")
+        print(f"  ⚡ Status: {uptime_str}")
+        print(f"  📶 Ping: {ping_str}")
+        print(f"  🕐 Fetched: {fetched_time}")
         divider()
-        print(f"  {C.C}[Q]{C.rst}ပြန်  {C.C}[A]{C.rst}အားလုံးဖျက်")
-        sel=input("  ▶ : ").strip().upper()
-        if sel=="Q": break
-        elif sel=="A" and input(f"  {C.R}ဖျက်မှာလား? y/n:{C.rst}").lower()=="y":
-            os.path.exists(FAV_FILE) and os.remove(FAV_FILE); break
+        print(f"  🔑 Key:\n  {C.W}{item['key']}{C.rst}\n")
+        print(f"  {C.C}[←] Previous    {C.C}[→] Next    {C.C}[1]{C.rst} Copy    {C.C}[Q]{C.rst} Back")
+        
+        sel = input("  Choose: ").strip().upper()
+        if sel == "Q":
+            break
+        elif sel == "1":
+            try:
+                import subprocess
+                subprocess.run(["termux-clipboard-set", item["key"]])
+                print(f"  {C.G}✅ Copied!{C.rst}")
+                time.sleep(1)
+            except:
+                print(f"  Key: {item['key']}")
+                input("  Press Enter...")
+        elif sel == "" or sel == "→":
+            idx = (idx + 1) % len(all_keys)
+        elif sel == "←":
+            idx = (idx - 1) % len(all_keys)
+
+def show_favorites():
+    header()
+    print(f"  ⭐ Your Favorites\n")
+    
+    if not os.path.exists(FAV_FILE):
+        print(f"  {C.D}No favorites yet.{C.rst}")
+    else:
+        with open(FAV_FILE, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        if not lines:
+            print(f"  {C.D}No favorites yet.{C.rst}")
+        else:
+            for i, line in enumerate(lines, 1):
+                parts = line.strip().split("|", 3)
+                name = parts[0] if len(parts)>0 else "Server"
+                key = parts[1] if len(parts)>1 else ""
+                ping = parts[2] if len(parts)>2 else ""
+                t = parts[3] if len(parts)>3 else ""
+                flag = get_flag_emoji(name)
+                print(f"  {C.C}[{i}]{C.rst} {flag} {name}")
+                if ping:
+                    print(f"     📶 {ping}")
+                if t:
+                    print(f"     🕐 {t}")
+                print()
+    input("  Press Enter to go back...")
 
 def main_menu():
     while True:
         header()
-        print(f"  {C.Y}📂 ပင်မမီနူး{C.rst}\n")
-        divider()
-        print(f"  {C.G}🎯 [M] ကျွန်ုပ်အတွက် အသင့်တော်ဆုံး — အကြံပြု{C.rst}")
-        print(f"  {C.G}🏆 [0] အမြန်ဆုံးကိုသာ ရွေးမည်{C.rst}")
-        print(f"  {C.C}📋 [B] အားလုံးကို ကြည့်ပြီး ကိုယ်တိုင်ရွေးမည်{C.rst}\n")
-        print(f"  {C.C}[1]{C.rst} Shadowmere JSON")
-        print(f"  {C.C}[2]{C.rst} Shadowmere Base64")
-        print(f"  {C.C}[3]{C.rst} VLESS List")
-        print(f"  {C.C}[4]{C.rst} ⭐ အကြိုက်ဆုံးများ\n")
-        print(f"  {C.R}[9]{C.rst} ထွက်မည်")
-        divider()
-        ch=input("  ▶ ရွေးပါ : ").strip().upper()
-        if ch=="M": find_best_for_me()
-        elif ch=="0": find_best_key()
-        elif ch=="B": find_browse_keys()
-        elif ch=="9": clear(); print(f"\n  {C.C}👋 ကျေးဇူးတင်ပါတယ်။{C.rst}\n"); sys.exit(0)
-        elif ch=="4": favorites_menu()
-        elif ch in API_LIST:
-            name,url,dtype = API_LIST[ch]
-            header(); print(f"  {C.Y}{name} မှ ဒေတာရယူနေသည်...{C.rst}\n")
-            data = {"json":fetch_json,"b64":fetch_b64,"txt":fetch_txt}[dtype](url)
-            if not data: input(f"  {C.R}မရပါ။ Enter...{C.rst}"); continue
-            items=[]
-            if dtype=="json" and isinstance(data,list):
-                for item in data:
+        print(f"  🎯 [M] Best for ME  — Auto match")
+        print(f"  🏆 [0] Fastest only")
+        print(f"  📋 [B] Browse all servers")
+        print(f"  ⭐ [4] My Favorites")
+        print(f"  🚪 [9] Exit\n")
         
+        sel = input("  Select: ").strip().upper()
+        if sel == "M":
+            find_best_for_me()
+        elif sel == "0":
+            find_fastest()
+        elif sel == "B":
+            browse_all()
+        elif sel == "4":
+            show_favorites()
+        elif sel == "9":
+            print(f"  {C.G}👋 Bye!{C.rst}")
+            sys.exit(0)
+
+if __name__ == "__main__":
+    try:
+        main_menu()
+    except KeyboardInterrupt:
+        print(f"\n  {C.Y}Exited.{C.rst}")
+        sys.exit(0)
+    
