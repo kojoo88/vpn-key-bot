@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-import urllib.request, urllib.error, json, base64, os, sys, socket, time, getpass
+import urllib.request, urllib.error, json, base64, os, sys, socket, time
 
 os.environ["TERM"] = "xterm-256color"
 
-# ==========================================
-#        🔑 စကားဝှက် သတ်မှတ်ချက်
-# ==========================================
-ADMIN_PASSWORD = "admin123"   # လိုသလို ပြောင်းလို့ရတယ်
-MAX_ATTEMPTS = 3              # အမှားအကြိမ်အရေအတွက်
-# ==========================================
-
-VERSION = "3.6 🔒"
+VERSION = "3.5 ✨"
 FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
 
 API_LIST = {
@@ -20,36 +13,6 @@ API_LIST = {
 }
 
 def clear(): os.system("clear")
-
-# ==========================================
-#        🔐 အက်ဒမင် ဝင်ရောက်ခြင်း
-# ==========================================
-def admin_login():
-    clear()
-    red = "\033[91m"
-    grn = "\033[92m"
-    yel = "\033[93m"
-    blu = "\033[96m"
-    rst = "\033[0m"
-
-    print(f"{red}╔════════════════════════════════════════════════════╗{rst}")
-    print(f"{red}║              🔒  ADMIN LOGIN REQUIRED               ║{rst}")
-    print(f"{red}╚════════════════════════════════════════════════════╝{rst}")
-    print()
-
-    for attempt in range(MAX_ATTEMPTS, 0, -1):
-        pw = getpass.getpass(f"  🔑 စကားဝှက် ထည့်ပါ : ")
-        if pw == ADMIN_PASSWORD:
-            print(f"\n  {grn}✅ အောင်မြင်စွာ ဝင်ရောက်ပြီးပါပြီ!{rst}")
-            time.sleep(1)
-            return True
-        attempt -= 1
-        if attempt > 0:
-            print(f"  {yel}⚠️  စကားဝှက်မှားနေပါသည်။ ကျန်နော် {attempt} ကြိမ်သာ ကျန်ပါတယ်။{rst}\n")
-
-    print(f"\n  {red}🚫 ခွင့်ပြုချက်မရှိပါ။ ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။{rst}")
-    time.sleep(2)
-    sys.exit(1)
 
 # ==========================================
 #        📋 ကလစ်ဘုတ် ကူးယူခြင်း
@@ -86,12 +49,6 @@ def save_favorite(name, key):
         return True
     return False
 
-def remove_favorite(name):
-    favs = load_favorites()
-    new_favs = [f for f in favs if not f.startswith(f"{name}|")]
-    with open(FAV_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(new_favs))
-
 # ==========================================
 #        ⚡ Ping စစ်ဆေးခြင်း
 # ==========================================
@@ -106,9 +63,9 @@ def test_ping(host, port, timeout=2):
         sock.close()
         ms = round((time.time() - start) * 1000)
         if result == 0:
-            if ms < 100: return ms, f"🟢 အလွန်ကောင်း {ms}ms"
-            elif ms < 200: return ms, f"🟡 ကောင်းသည် {ms}ms"
-            else: return ms, f"🔴 နှေးသည် {ms}ms"
+            if ms < 100: return ms, "🟢 အလွန်ကောင်း {}ms".format(ms)
+            elif ms < 200: return ms, "🟡 ကောင်းသည် {}ms".format(ms)
+            else: return ms, "🔴 နှေးသည် {}ms".format(ms)
         return 9999, "❌ မရနိုင်ပါ"
     except: return 9999, "⚠️ စမ်းသပ်၍မရ"
 
@@ -147,16 +104,16 @@ def make_ss_key(s):
         port = s.get("serverPort", s.get("port", s.get("server_port", "")))
         method = s.get("method", "")
         password = s.get("password", "")
-        info = f"{method}:{password}"
+        info = "{}:{}".format(method, password)
         b64 = base64.b64encode(info.encode()).decode().rstrip("=")
         name = s.get("remarks", s.get("name", "Server"))
-        return f"ss://{b64}@{host}:{port}#{name}"
+        return "ss://{}@{}#{}".format(b64, host+":"+str(port), name)
     except: return "❌ အမှား"
 
 def extract_host_port(link):
     try:
         if link.startswith("ss://"):
-            part = link.split("@")[1].split("#")[0]
+            part = link.split("//")[1].split("@")[1].split("#")[0]
             h, p = part.split(":")
             return h, int(p)
         elif "://" in link:
@@ -180,7 +137,7 @@ def extract_host_port(link):
 #        ⏳ Loading
 # ==========================================
 def loading(text="ဒေတာရယူနေသည်"):
-    print(f"\n  ⏳ {text}", end="", flush=True)
+    print("\n  ⏳ {}".format(text), end="", flush=True)
     for _ in range(4):
         time.sleep(0.3)
         print(".", end="", flush=True)
@@ -192,14 +149,14 @@ def loading(text="ဒေတာရယူနေသည်"):
 def header():
     clear()
     p, c, y, rst = "\033[95m", "\033[96m", "\033[93m", "\033[0m"
-    print(f"{p}╔════════════════════════════════════════════════════════════════╗{rst}")
-    print(f"{p}║{rst}    ✨ {c}V P N   K E Y   G E N E R A T O R{rst}  v{VERSION} ✨        {p}║{rst}")
-    print(f"{p}║{rst}     ⭐ အကြိုက်ဆုံးများ  📋 ကူးယူခြင်း  ⚡ အမြန်ဆုံးရွေးချယ်  🔍 စစ်ဆေးမှု   {p}║{rst}")
-    print(f"{p}╚════════════════════════════════════════════════════════════════╝{rst}")
-    print(f"{c}┌────────────────────────────────────────────────────────────────────┐{rst}")
-    print(f"{c}│{rst}  📡 Status: Online ✅     ⭐ Favorites: {len(load_favorites())} လုံး     ⚡ Ping Test: အသင့်တော်ဆုံး{c}│{rst}")
-    print(f"{c}└────────────────────────────────────────────────────────────────────┘{rst}")
-    print(f"{y}{'─' * 68}{rst}")
+    print("{}╔════════════════════════════════════════════════════════════════╗{}".format(p, rst))
+    print("{}║{}    ✨ {}V P N   K E Y   G E N E R A T O R{}  v{} ✨        {}║{}".format(p, rst, c, rst, VERSION, p, rst))
+    print("{}║{}     ⭐ အကြိုက်ဆုံးများ  📋 ကူးယူခြင်း  ⚡ အမြန်ဆုံးရွေးချယ်  🔍 စစ်ဆေးမှု   {}║{}".format(p, rst, p, rst))
+    print("{}╚════════════════════════════════════════════════════════════════╝{}".format(p, rst))
+    print("{}┌────────────────────────────────────────────────────────────────────┐{}".format(c, rst))
+    print("{}│{}  📡 Status: Online ✅     ⭐ Favorites: {} လုံး     ⚡ Ping Test: အသင့်တော်ဆုံး{}│{}".format(c, rst, len(load_favorites()), c, rst))
+    print("{}└────────────────────────────────────────────────────────────────────┘{}".format(c, rst))
+    print("{}{}{}".format(y, "─" * 68, rst))
     print()
 
 # ==========================================
@@ -217,8 +174,8 @@ def favorites_menu():
             for i, entry in enumerate(favs, 1):
                 if "|" in entry:
                     name, key = entry.split("|", 1)
-                    print(f"  [{i}] ⭐ {name}")
-                    print(f"      🔑 {key[:55]}...")
+                    print("  [{}] ⭐ {}".format(i, name))
+                    print("      🔑 {}...".format(key[:55]))
                     print()
         print("  ──────────────────────────────────────────────────")
         print("  [C] မီနူးသို့ပြန်ရန်    [A] အားလုံးဖျက်မည်")
@@ -242,12 +199,12 @@ def show_fastest(data, api_type):
         if api_type == "json":
             host = item.get("serverAddress", item.get("server", ""))
             port = item.get("serverPort", item.get("port", item.get("server_port", "")))
-            name = item.get("remarks", item.get("name", f"Server {idx}"))
+            name = item.get("remarks", item.get("name", "Server {}".format(idx)))
             key = make_ss_key(item)
         else:
             key = item
             host, port = extract_host_port(item)
-            name = f"Server {idx}"
+            name = "Server {}".format(idx)
         ms, _ = test_ping(host, port, timeout=1.5)
         if ms < best_ms and ms < 9999:
             best_ms, best_name, best_key = ms, name, key
@@ -255,11 +212,11 @@ def show_fastest(data, api_type):
     clear()
     print("\033[95m╔══════════════════════════════════════════════════════════╗\033[0m")
     if best_name:
-        print(f"\033[96m  🏆 အမြန်ဆုံး Server: {best_name}  •  {best_ms}ms\033[0m")
+        print("\033[96m  🏆 အမြန်ဆုံး Server: {}  •  {}ms\033[0m".format(best_name, best_ms))
         print("\033[95m╚══════════════════════════════════════════════════════════╝\033[0m")
-        print(f"\n  📍 {best_name}")
-        print(f"  ⚡ 🟢 အလွန်ကောင်း {best_ms}ms")
-        print(f"  🔑 {best_key}")
+        print("\n  📍 {}".format(best_name))
+        print("  ⚡ 🟢 အလွန်ကောင်း {}ms".format(best_ms))
+        print("  🔑 {}".format(best_key))
         if copy_to_clipboard(best_key):
             print("  ✅ ကလစ်ဘုတ်ကူးယူပြီးပါပြီ!")
         if save_favorite(best_name, best_key):
@@ -274,27 +231,27 @@ def show_fastest(data, api_type):
 def show_results(results, api_type):
     clear()
     print("\033[95m╔══════════════════════════════════════════════════════════╗\033[0m")
-    print(f"\033[96m  📌 စုစုပေါင်း {len(results)} လုံး\033[0m")
+    print("\033[96m  📌 စုစုပေါင်း {} လုံး\033[0m".format(len(results)))
     print("\033[95m╚══════════════════════════════════════════════════════════╝\033[0m")
 
     for idx, item in enumerate(results, 1):
         if api_type == "json":
             host = item.get("serverAddress", item.get("server", ""))
             port = item.get("serverPort", item.get("port", item.get("server_port", "")))
-            name = item.get("remarks", item.get("name", f"Server {idx}"))
+            name = item.get("remarks", item.get("name", "Server {}".format(idx)))
             key = make_ss_key(item)
         else:
             key = item
             host, port = extract_host_port(item)
-            name = f"Server {idx}"
+            name = "Server {}".format(idx)
 
         ms, status = test_ping(host, port)
-        print(f"\n  ┌─────────────────────────────────────────────┐")
-        print(f"  │ [{idx}] 📍 {name}")
-        print(f"  │ ⚡ {status}")
-        print(f"  ├─────────────────────────────────────────────┤")
-        print(f"  │ 🔑 {key}")
-        print(f"  └─────────────────────────────────────────────┘")
+        print("\n  ┌─────────────────────────────────────────────┐")
+        print("  │ [{}] 📍 {}".format(idx, name))
+        print("  │ ⚡ {}".format(status))
+        print("  ├─────────────────────────────────────────────┤")
+        print("  │ 🔑 {}".format(key))
+        print("  └─────────────────────────────────────────────┘")
         print("  │  [C] ကူးယူ  [F] အကြိုက်ဆုံးသိမ်း  [N] နောက်တစ်ခု  [Q] ပြန်")
 
         ch = input("  ▸ ရွေးချယ်မှု : ").strip().lower()
@@ -358,9 +315,8 @@ def main_menu():
         header()
         print("  📂 အရင်းအမြစ် ရွေးချယ်ပါ")
         print("  ──────────────────────────────────────────────────")
-        print("  [1] 🌐 Shadowmere JSON API")
-        print("  [2] 🔐 Shadowmere Base64 API")
-        print("  [3] 📋 VLESS Config List")
+        for k, v in API_LIST.items():
+            print("  [{}] {}".format(k, v[0]))
         print("  [4] ⭐ အကြိုက်ဆုံးများ")
         print("  ──────────────────────────────────────────────────")
         print("  [0] ❌ ပရိုဂရမ်မှ ထွက်ရန်")
@@ -377,7 +333,7 @@ def main_menu():
 
         name, url, dtype = API_LIST[ch]
         header()
-        loading(f"{name} မှ ဒေတာရယူနေသည်")
+        loading("{} မှ ဒေတာရယူနေသည်".format(name))
 
         data = None
         if dtype == "json": data = fetch_json(url)
@@ -394,10 +350,9 @@ def main_menu():
 # ==========================================
 if __name__ == "__main__":
     try:
-        admin_login()   # 🔑 စကားဝှက် တောင်းပါမယ်
         main_menu()
     except KeyboardInterrupt:
         clear()
         print("\n\n  👋 ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။\n")
         sys.exit(0)
-                                    
+            
