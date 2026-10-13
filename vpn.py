@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# VPN Key Generator — Premium Edition v4.5
-# ပြင်ဆင်ချက်: Key parsing ပြဿနာဖြေရှင်း၊ VLESS/SS Key မှန်ကန်စွာထုတ်ယူ
+# VPN Key Generator — Premium Edition v4.6
+# ပြင်ဆင်ချက်: အရင်းအမြစ်များကို ပိုမိုခိုင်မာအောင်ပြုပြင်၊ အမှားစစ်ဆေးမှုတိုးမြှင့်
 
 import urllib.request
 import urllib.error
@@ -8,17 +8,17 @@ import json
 import base64
 import os
 import sys
-import re
 
 os.environ["TERM"] = "xterm-256color"
 
-VERSION = "4.5 ✨ PREMIUM"
+VERSION = "4.6 ✨ PREMIUM"
 FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
 
+# ✅ အရင်းအမြစ်များကို အသစ်ပြင်ဆင်ထားတယ်
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
     "2": ("Shadowmere Base64", "https://shadowmere.xyz/api/b64sub/", "b64"),
-    "3": ("VLESS List", "https://github.com/Epodonios/v2ray-configs/raw/main/Splitted-By-Protocol/vless.txt", "txt")
+    "3": ("VLESS List", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt", "txt")
 }
 
 
@@ -46,7 +46,7 @@ def header():
     print(f"{c.P}╔══════════════════════════════════════════════════════════════════════╗{c.rst}")
     print(f"{c.P}║{c.rst}{c.Y}    ✨  VPN KEY GENERATOR — PREMIUM EDITION  v{VERSION.split()[1]}   ✨{c.rst}{c.P}║{c.rst}")
     print(f"{c.P}╠══════════════════════════════════════════════════════════════════════╣{c.rst}")
-    print(f"{c.P}║{c.rst}  {c.C}📡 Status:{c.rst} Online ✅  {c.C}│{c.rst}  {c.C}⭐ Favorites:{c.rst} {fav_count}  {c.C}│{c.rst}  {c.C}⚡ Fast Mode  {c.P}║{c.rst}")
+    print(f"{c.P}║{c.rst}  {c.C}📡 Status:{c.rst} Online ✅  {c.C}│{c.rst}  {c.C}⭐ Favorites:{c.rst} {fav_count}  {c.C}│{c.rst}  {c.C}⚡ Updated  {c.P}║{c.rst}")
     print(f"{c.P}╚══════════════════════════════════════════════════════════════════════╝{c.rst}")
     print()
 
@@ -91,70 +91,86 @@ def save_favorite(name, key):
     return False
 
 
+# ✅ JSON ဒေတာကို ပိုမိုကောင်းမွန်အောင်ဖတ်မယ်
 def fetch_json(url):
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=15) as response:
-            return json.loads(response.read().decode())
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/json"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=20) as response:
+            data = response.read().decode()
+            json_data = json.loads(data)
+            
+            # ဖွဲ့စည်းပုံအမျိုးမျိုးကို ကိုင်တွယ်မယ်
+            if isinstance(json_data, dict):
+                for key in ["data", "servers", "list", "subs"]:
+                    if key in json_data and isinstance(json_data[key], list):
+                        return json_data[key]
+            
+            if isinstance(json_data, list):
+                return json_data
+            
+            return None
+    except json.JSONDecodeError:
+        print(f"  {c.R}❌ JSON ဖွဲ့စည်းပုံမှားနေတယ်{c.rst}")
+        return None
     except Exception as e:
-        print(f"  {c.R}❌ JSON: {str(e)[:40]}{c.rst}")
+        print(f"  {c.R}❌ အမှား: {str(e)[:45]}{c.rst}")
         return None
 
 
 def fetch_b64(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             decoded = base64.b64decode(response.read()).decode()
             lines = [line.strip() for line in decoded.splitlines() if line.strip()]
             return lines if lines else None
     except Exception as e:
-        print(f"  {c.R}❌ Base64: {str(e)[:40]}{c.rst}")
+        print(f"  {c.R}❌ Base64: {str(e)[:45]}{c.rst}")
         return None
 
 
 def fetch_txt(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             content = response.read().decode()
-            lines = [line.strip() for line in content.splitlines() if line.strip() and not line.startswith("#")]
+            lines = [
+                line.strip() for line in content.splitlines()
+                if line.strip() and not line.startswith("#")
+            ]
             return lines if lines else None
     except Exception as e:
-        print(f"  {c.R}❌ TXT: {str(e)[:40]}{c.rst}")
+        print(f"  {c.R}❌ TXT: {str(e)[:45]}{c.rst}")
         return None
 
 
-# ✅ ပြင်ဆင်ထားတဲ့ Key Parse Function — မှန်ကန်စွာထုတ်ပေးမယ်
+# ✅ Key ကို အမှန်တကယ်ထုတ်ပေးမယ်
 def parse_key_info(key):
     if not key or len(key) < 10:
-        return "Invalid Server", key
+        return None, None
 
-    # VLESS
+    name = "Unknown Server"
+    
+    if "#" in key:
+        try:
+            name_part = key.split("#")[-1]
+            import urllib.parse
+            name = urllib.parse.unquote(name_part)
+        except:
+            name = "Server"
+    
     if key.startswith("vless://"):
-        try:
-            if "#" in key:
-                name = key.split("#")[-1]
-                name = urllib.parse.unquote(name)
-            else:
-                name = "VLESS Server"
-            return name, key
-        except:
-            return "VLESS Server", key
-
-    # Shadowsocks
+        return name, key
     elif key.startswith("ss://"):
-        try:
-            if "#" in key:
-                name = key.split("#")[-1]
-                name = urllib.parse.unquote(name)
-            else:
-                name = "Shadowsocks Server"
-            return name, key
-        except:
-            return "Shadowsocks Server", key
-
-    return "Server", key
+        return name, key
+    
+    return None, None
 
 
 def find_best_key():
@@ -177,13 +193,14 @@ def find_best_key():
             data = fetch_txt(url)
 
         if data:
-            print(f" {c.G}✅ အဆင်ပြေ{c.rst}")
+            print(f" {c.G}✅ ရရှိ{c.rst}")
             sources.append((name, data, data_type))
         else:
             print(f" {c.R}❌ မရရှိ{c.rst}")
 
     if not sources:
         print(f"\n  {c.R}❌ မည်သည့်အရင်းအမြစ်မှ ဒေတာမရရှိပါ။{c.rst}")
+        print(f"  {c.Y}💡 အကြံပြု: Option 2 ကို အရင်သုံးကြည့်ပါ (Base64 သည်းသာအလုပ်လုပ်တတ်သည်){c.rst}")
         input(f"  {c.D}Enter နှိပ်ပါ...{c.rst}")
         return
 
@@ -191,27 +208,34 @@ def find_best_key():
     print(f"  {c.Y}⚡ VPN Key များကို စုဆောင်းနေသည်...{c.rst}\n")
 
     for source_name, data, data_type in sources:
+        count = 0
+        
         if data_type == "json" and isinstance(data, list):
             for item in data:
                 if isinstance(item, dict):
-                    key = item.get("url", item.get("link", ""))
-                    name = item.get("name", item.get("remarks", f"Server {len(all_keys)+1}"))
+                    key = item.get("url") or item.get("link") or item.get("server") or ""
+                    name = item.get("name") or item.get("remarks") or f"Server {count+1}"
+                    
                     if key and (key.startswith("vless://") or key.startswith("ss://")):
                         all_keys.append({"name": name, "key": key, "source": source_name})
+                        count += 1
 
         elif data_type in ["b64", "txt"] and isinstance(data, list):
             for key in data:
-                if key.startswith("vless://") or key.startswith("ss://"):
-                    name, full_key = parse_key_info(key)
-                    all_keys.append({"name": name, "key": full_key, "source": source_name})
+                name, valid_key = parse_key_info(key)
+                if valid_key:
+                    all_keys.append({"name": name, "key": valid_key, "source": source_name})
+                    count += 1
+        
+        print(f"     → {source_name}: Key {count} လုံး တွေ့ရှိခဲ့သည်{c.rst}")
 
     if not all_keys:
-        print(f"  {c.R}❌ မည်သည့် VPN Key မျှမတွေ့ပါ။{c.rst}")
-        print(f"  {c.Y}💡 ဖြေရှင်းနည်း: နောက်မှ ထပ်ကြိုးစားပါ သို့မဟုတ် အခြားအရင်းအမြစ်ကို သုံးကြည့်ပါ။{c.rst}")
+        print(f"\n  {c.R}❌ မည်သည့် VPN Key မျှမတွေ့ပါ။{c.rst}")
+        print(f"  {c.Y}💡 အကြံပြု: အချိန်နည်းနည်းစောင့်ပြီး ပြန်ကြိုးစားပါ သို့မဟုတ် Option 2 ကိုသုံးပါ။{c.rst}")
         input(f"  {c.D}Enter နှိပ်ပါ...{c.rst}")
         return
 
-    print(f"  {c.G}✅ စုစုပေါင်း Key {len(all_keys)} လုံး ရရှိခဲ့သည်။{c.rst}\n")
+    print(f"\n  {c.G}✅ စုစုပေါင်း Key {len(all_keys)} လုံး ရရှိခဲ့သည်။{c.rst}\n")
 
     current_index = 0
     while True:
@@ -228,9 +252,9 @@ def find_best_key():
         divider()
 
         if copy_to_clipboard(item["key"]):
-            print(f"  {c.G}✅ ကလစ်ဘုတ်သို့ ကူးယူပြီးပါပြီ! ✅{c.rst}")
+            print(f"  {c.G}✅ ကူးယူပြီးပါပြီ! ✅{c.rst}")
         else:
-            print(f"  {c.Y}⚠️ အပေါ်က Key ကို နှိပ်ဖိထားပါ → Copy ကို ရွေးပါ{c.rst}")
+            print(f"  {c.Y}⚠️ အပေါ်က Key ကို ကိုယ်တိုင်ကူးယူပါ{c.rst}")
         divider()
 
         print(f"  {c.C}[F]{c.rst} သိမ်းမည်  ", end="")
@@ -297,7 +321,7 @@ def main_menu():
         print(f"  {c.G}⭐ [0]  အကောင်းဆုံး Key ကို ရှာမည် — အကြံပြု{c.rst}")
         print()
         print(f"  {c.C}[1]{c.rst} Shadowmere JSON")
-        print(f"  {c.C}[2]{c.rst} Shadowmere Base64")
+        print(f"  {c.C}[2]{c.rst} Shadowmere Base64  ← အရင်စမ်းကြည့်ပါ")
         print(f"  {c.C}[3]{c.rst} VLESS List")
         print(f"  {c.C}[4]{c.rst} ⭐ အကြိုက်ဆုံးများ")
         print()
@@ -340,21 +364,23 @@ def main_menu():
             if data_type == "json" and isinstance(data, list):
                 for item in data:
                     if isinstance(item, dict):
-                        key = item.get("url", item.get("link", ""))
-                        sname = item.get("name", item.get("remarks", f"Server {len(items)+1}"))
+                        key = item.get("url") or item.get("link") or ""
+                        sname = item.get("name") or item.get("remarks") or f"Server {len(items)+1}"
                         if key and (key.startswith("vless://") or key.startswith("ss://")):
                             items.append({"name": sname, "key": key})
             elif data_type in ["b64", "txt"] and isinstance(data, list):
                 for key in data:
-                    if key.startswith("vless://") or key.startswith("ss://"):
-                        sname, full_key = parse_key_info(key)
+                    sname, full_key = parse_key_info(key)
+                    if full_key:
                         items.append({"name": sname, "key": full_key})
 
             if not items:
                 print(f"  {c.R}❌ Key မတွေ့ပါ။{c.rst}")
+                print(f"  {c.Y}💡 အကြံပြု: အခြားအရင်းအမြစ်ကို စမ်းကြည့်ပါ။{c.rst}")
                 input(f"  {c.D}Enter...{c.rst}")
                 continue
 
+            print(f"  {c.G}✅ Server {len(items)} ခု တွေ့ရှိခဲ့သည်။{c.rst}\n")
             for idx, item in enumerate(items, 1):
                 print(f"  {c.C}[{idx}]{c.rst} {item['name']}")
             divider()
@@ -379,7 +405,7 @@ def main_menu():
                     if copy_to_clipboard(key):
                         print(f"  {c.G}✅ ကူးယူပြီးပါပြီ!{c.rst}")
                     else:
-                        print(f"  {c.Y}⚠️ ဖိပြီး Copy ကူးပါ{c.rst}")
+                        print(f"  {c.Y}⚠️ ကိုယ်တိုင်ကူးယူပါ{c.rst}")
                     divider()
 
                     while True:
@@ -406,4 +432,4 @@ if __name__ == "__main__":
         clear()
         print(f"\n  {c.R}❌ အမှား: {str(e)}{c.rst}")
         input(f"  {c.D}Enter...{c.rst}")
-    
+        
