@@ -115,7 +115,7 @@ def parse_key_info(key):
 
 def find_best_key():
     header()
-    print(f"  {c.Y}🔍 ရှာဖွေနေသည်...{c.rst}\n")
+    print(f"  {Colors.Y}🔍 ရှာဖွေနေသည်...{Colors.rst}\n")
     all_keys = []; sources = []
     for sid in ["1","2","3"]:
         name, url, dtype = API_LIST[sid]
