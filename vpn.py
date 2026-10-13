@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# VPN Key Generator — Premium Edition v5.2
+# VPN Key Generator — Premium Edition v5.3
 import urllib.request
 import urllib.error
 import json
@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 os.environ["TERM"] = "xterm-256color"
-VERSION = "5.2 ✨ PREMIUM"
+VERSION = "5.3 ✨ PREMIUM"
 FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
 
 class Colors:
@@ -29,6 +29,13 @@ API_LIST = {
     "2": ("Shadowmere Base64", "https://shadowmere.xyz/api/b64sub/", "b64"),
     "3": ("VLESS List", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Splitted-By-Protocol/vless.txt", "txt")
 }
+
+# မြန်မာနိုင်ငံနှင့် နီးစပ်ရာ နိုင်ငံများ (ဦးစားပေးအစီအစဉ်)
+NEARBY_COUNTRIES = [
+    "singapore", "malaysia", "thailand", "vietnam", 
+    "indonesia", "philippines", "hong kong", "hongkong", 
+    "japan", "korea", "india", "australia"
+]
 
 def clear(): os.system("clear")
 C = Colors()
@@ -71,7 +78,6 @@ def copy_to_clipboard(text):
     except: return False
 
 def get_uptime_percent(ping_ms):
-    """Ping ပေါ်မူတည်ပြီး အွန်လိုင်းရာခိုင်နှုန်း တွက်ပေးတယ်"""
     if ping_ms < 100:
         return 100, f"{C.G}⚡ 100%{C.rst}"
     elif ping_ms < 150:
@@ -117,36 +123,32 @@ def extract_host_port(key):
     return "", ""
 
 def get_flag_emoji(name):
-    """နိုင်ငံနာမည်ကို အလံပြောင်းပေးတယ်"""
     name = name.lower()
     flags = {
-        "singapore": "🇸🇬",
-        "malaysia": "🇲🇾",
-        "germany": "🇩🇪",
-        "finland": "🇫🇮",
-        "japan": "🇯🇵",
-        "korea": "🇰🇷",
-        "usa": "🇺🇸",
-        "united states": "🇺🇸",
-        "uk": "🇬🇧",
-        "united kingdom": "🇬🇧",
-        "india": "🇮🇳",
-        "hongkong": "🇭🇰",
-        "hong kong": "🇭🇰",
-        "russia": "🇷🇺",
-        "netherlands": "🇳🇱",
-        "france": "🇫🇷",
-        "thailand": "🇹🇭",
-        "vietnam": "🇻🇳",
-        "philippines": "🇵🇭",
-        "indonesia": "🇮🇩",
-        "australia": "🇦🇺",
-        "canada": "🇨🇦",
-        "brazil": "🇧🇷"
+        "singapore": "🇸🇬", "malaysia": "🇲🇾", "thailand": "🇹🇭",
+        "vietnam": "🇻🇳", "indonesia": "🇮🇩", "philippines": "🇵🇭",
+        "hongkong": "🇭🇰", "hong kong": "🇭🇰", "japan": "🇯🇵",
+        "korea": "🇰🇷", "india": "🇮🇳", "australia": "🇦🇺",
+        "germany": "🇩🇪", "finland": "🇫🇮", "usa": "🇺🇸",
+        "united states": "🇺🇸", "uk": "🇬🇧", "russia": "🇷🇺"
     }
     for k, v in flags.items():
         if k in name: return v
     return "🌐"
+
+def get_country_priority(name):
+    """နိုင်ငံအပေါ်မူတည်ပြီး ဦးစားပေးအမှတ်ပေး (နီးလေ ပိုကောင်းလေ)"""
+    name = name.lower()
+    for idx, country in enumerate(NEARBY_COUNTRIES):
+        if country in name:
+            return 100 - (idx * 5)  # စင်ကာပူ = 100, မလေးရှား = 95, ထိုင်း = 90...
+    return 30  # ဝေးတဲ့နိုင်ငံများ
+
+def calculate_score(ping_ms, country_priority, uptime_pct):
+    """အကိုက်ညီဆုံးဖြစ်အောင် အမှတ်တွက်ပေးတယ် — အမှတ်များလေ ပိုကောင်းလေ"""
+    ping_score = max(0, 100 - ping_ms // 2)  # Ping နည်းလေ အမှတ်များလေ
+    total = int((country_priority * 0.5) + (ping_score * 0.35) + (uptime_pct * 0.15))
+    return total
 
 def build_share_text(name, key, ping_info="", uptime_pct="", fetched_time=""):
     ping_clean = ping_info.replace(C.G,"").replace(C.Y,"").replace(C.R,"").replace(C.rst,"")
@@ -268,7 +270,7 @@ def show_key_detail(item, ping_ms, ping_str):
 
 def find_best_key():
     header()
-    print(f"  {C.Y}🔍 အကောင်းဆုံး Server ကို ရှာဖွေနေသည်...{C.rst}\n")
+    print(f"  {C.Y}🔍 အမြန်ဆုံး Server ကို ရှာဖွေနေသည်...{C.rst}\n")
     all_keys = get_all_keys()
     if not all_keys:
         input(f"  {C.R}မရပါ။ Enter...{C.rst}"); return
@@ -300,10 +302,66 @@ def find_best_key():
         input(f"\n  {C.R}အလုပ်လုပ်နိုင်တဲ့ Server မတွေ့ပါ။ Enter...{C.rst}"); return
     
     print(f"\n{C.G}══════════════════════════════════════════════════{C.rst}")
-    print(f"{C.G}🏆 အကောင်းဆုံး — အမြန်ဆုံး Server ကို တွေ့ရှိခဲ့သည်!{C.rst}")
+    print(f"{C.G}🏆 အမြန်ဆုံး Server ကို တွေ့ရှိခဲ့သည်!{C.rst}")
     print(f"{C.G}══════════════════════════════════════════════════{C.rst}\n")
     
     show_key_detail(best_key, best_key["ping_ms"], best_key["ping_str"])
+
+def find_best_for_me():
+    header()
+    print(f"  {C.Y}🎯 သင့်အတွက် အသင့်တော်ဆုံး Server ကို ရှာဖွေနေသည်...{C.rst}")
+    print(f"  {C.D}📍 မြန်မာနိုင်ငံမှ အနီးဆုံး + အမြန်ဆုံးကို ရွေးချင်နေသည်...{C.rst}\n")
+    
+    all_keys = get_all_keys()
+    if not all_keys:
+        input(f"  {C.R}မရပါ။ Enter...{C.rst}"); return
+    
+    print(f"  {C.C}စုစုပေါင်း Key {len(all_keys)} လုံး ကို စစ်ဆေးနေသည် ✅{C.rst}")
+    print(f"  {C.Y}⏳ အကဲဖြတ်နေသည်... (တည်နေရာ + အမြန်နှုန်း + တည်ငြိမ်မှု){C.rst}\n")
+    
+    scored_keys = []
+    
+    for i, item in enumerate(all_keys, 1):
+        host, port = extract_host_port(item['key'])
+        if not host: continue
+        flag = get_flag_emoji(item['name'])
+        sys.stdout.write(f"  {flag} {i}/{len(all_keys)} — {item['name'][:20]}...စစ်ဆေးနေသည်")
+        sys.stdout.flush()
+        
+        ping_ms, ping_str = test_ping(host, port, timeout=1.5)
+        uptime_pct, _ = get_uptime_percent(ping_ms)
+        country_priority = get_country_priority(item['name'])
+        score = calculate_score(ping_ms, country_priority, uptime_pct)
+        
+        scored_keys.append({
+            **item,
+            "ping_ms": ping_ms,
+            "ping_str": ping_str,
+            "uptime_pct": uptime_pct,
+            "country_priority": country_priority,
+            "score": score
+        })
+        
+        sys.stdout.write(f"  အမှတ် {score}/100 ✅\n")
+    
+    if not scored_keys:
+        input(f"\n  {C.R}အသင့်တော်ဆုံး Server မတွေ့ပါ။ Enter...{C.rst}"); return
+    
+    # အမှတ်အများဆုံးကို ရွေးမယ်
+    scored_keys.sort(key=lambda x: x["score"], reverse=True)
+    best = scored_keys[0]
+    
+    print(f"\n{C.G}╔══════════════════════════════════════════════════╗{C.rst}")
+    print(f"{C.G}║{C.rst}  🎯 သင့်အတွက် အသင့်တော်ဆုံး Server ကို တွေ့ရှိခဲ့သည်!{C.G}║{C.rst}")
+    print(f"{C.G}╚══════════════════════════════════════════════════╝{C.rst}")
+    print(f"\n  {C.Y}📌 အကဲဖြတ်ချက်:{C.rst}")
+    print(f"     • တည်နေရာ နီးစပ်မှု  : {C.G}{best['country_priority']}{C.rst}/100")
+    print(f"     • တုံ့ပြန်မှု မြန်နှုန်း  : {best['ping_str']}")
+    print(f"     • အွန်လိုင်း တည်ငြိမ်မှု: {C.G}{best['uptime_pct']}%{C.rst}")
+    print(f"     ═══════════════════════════════")
+    print(f"     {C.G}စုစုပေါင်း အကိုက်ညီမှု အမှတ်: {best['score']}/100{C.rst}\n")
+    
+    show_key_detail(best, best["ping_ms"], best["ping_str"])
 
 def find_browse_keys():
     header()
@@ -414,8 +472,9 @@ def main_menu():
         header()
         print(f"  {C.Y}📂 ပင်မမီနူး{C.rst}\n")
         divider()
-        print(f"  {C.G}🏆 [0] အမြန်ဆုံးအကောင်းဆုံးကို ရွေးပေးပါ — အကြံပြု{C.rst}")
-        print(f"  {C.C}📋 [B] အားလုံးကို ကြည့်ပြီး ရွေးချယ်မည်{C.rst}\n")
+        print(f"  {C.G}🎯 [M] ကျွန်ုပ်အတွက် အသင့်တော်ဆုံး — အကြံပြု{C.rst}")
+        print(f"  {C.G}🏆 [0] အမြန်ဆုံးကိုသာ ရွေးမည်{C.rst}")
+        print(f"  {C.C}📋 [B] အားလုံးကို ကြည့်ပြီး ကိုယ်တိုင်ရွေးမည်{C.rst}\n")
         print(f"  {C.C}[1]{C.rst} Shadowmere JSON")
         print(f"  {C.C}[2]{C.rst} Shadowmere Base64")
         print(f"  {C.C}[3]{C.rst} VLESS List")
@@ -423,60 +482,17 @@ def main_menu():
         print(f"  {C.R}[9]{C.rst} ထွက်မည်")
         divider()
         ch=input("  ▶ ရွေးပါ : ").strip().upper()
-        if ch=="0": find_best_key()
+        if ch=="M": find_best_for_me()
+        elif ch=="0": find_best_key()
         elif ch=="B": find_browse_keys()
         elif ch=="9": clear(); print(f"\n  {C.C}👋 ကျေးဇူးတင်ပါတယ်။{C.rst}\n"); sys.exit(0)
         elif ch=="4": favorites_menu()
         elif ch in API_LIST:
-            name,url,dtype=API_LIST[ch]
+            name,url,dtype = API_LIST[ch]
             header(); print(f"  {C.Y}{name} မှ ဒေတာရယူနေသည်...{C.rst}\n")
             data = {"json":fetch_json,"b64":fetch_b64,"txt":fetch_txt}[dtype](url)
             if not data: input(f"  {C.R}မရပါ။ Enter...{C.rst}"); continue
             items=[]
             if dtype=="json" and isinstance(data,list):
                 for item in data:
-                    if isinstance(item,dict):
-                        key=item.get("url") or item.get("link") or ""
-                        n=item.get("name") or item.get("remarks") or "Server"
-                        if key and (key.startswith("vless://") or key.startswith("ss://")): items.append({"name":n,"key":key})
-            elif dtype in ["b64","txt"] and isinstance(data,list):
-                for k in data:
-                    n,vk=parse_key_info(k)
-                    if vk: items.append({"name":n,"key":vk})
-            if not items: input(f"  {C.R}Key မတွေ့ပါ။ အခြားရွေးပါ။ Enter...{C.rst}"); continue
-            for i,x in enumerate(items,1): print(f"  {C.C}[{i}]{C.rst} {get_flag_emoji(x['name'])} {x['name']}")
-            sel=input(f"\n  ▶ နံပါတ်ရွေးပါ [Q]ပြန် : ").strip().upper()
-            if sel=="Q": continue
-            try:
-                idx=int(sel)-1
-                if 0<=idx<len(items):
-                    it=items[idx]; header(); divider(get_flag_emoji(it['name'])+" "+it['name'])
-                    fetched_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    host, port = extract_host_port(it['key'])
-                    ping_ms, ping_str = test_ping(host, port) if host else (0, f"{C.D}မရနိုင်ပါ{C.rst}")
-                    _, uptime_str = get_uptime_percent(ping_ms)
-                    print(f"  {C.Y}⚡ အခြေအနေ:{C.rst} {uptime_str}")
-                    print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
-                    print(f"  {C.D}🕒 ရယူချိန်:{C.rst} {fetched_time}")
-                    print(f"  {C.G}🔑 Key:{C.rst}\n{C.W}{it['key']}{C.rst}")
-                    divider()
-                    share_text = build_share_text(it['name'], it['key'], ping_str, uptime_str, fetched_time)
-                    while True:
-                        print(f"\n  {C.C}[1]{C.rst}Key ကူး   {C.C}[2]{C.rst}Share ကူး   {C.C}[F]{C.rst}သိမ်း   {C.C}[Q]{C.rst}ပြန်")
-                        a=input("  ▶ : ").strip().upper()
-                        if a=="1":
-                            copy_to_clipboard(it['key'])
-                            print(f"  {C.G}✅ Key ကူးယူပြီး{C.rst}")
-                        elif a=="2":
-                            copy_to_clipboard(share_text)
-                            print(f"  {C.G}✅ Share အကုန်ကူးယူပြီး! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}")
-                        elif a=="F":
-                            save_favorite(it['name'], it['key'], ping_str, fetched_time)
-                            print(f"  {C.G}✅ သိမ်းပြီး{C.rst}")
-                        elif a=="Q":
-                            break
-            except: pass
-
-if __name__=="__main__":
-    try: main_menu()
-    except KeyboardInterrupt: clear(); print(f"\n  {C.C}👋 ပြီးပါပြီ။{C.rst}\n"); sys.exit(0)
+        
