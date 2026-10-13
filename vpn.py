@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# VPN Key Generator — Premium Edition v5.0
+# VPN Key Generator — Premium Edition v5.1
 import urllib.request
 import urllib.error
 import json
@@ -10,7 +10,7 @@ import socket
 import time
 
 os.environ["TERM"] = "xterm-256color"
-VERSION = "5.0 ✨ PREMIUM"
+VERSION = "5.1 ✨ PREMIUM"
 FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
 
 class Colors:
@@ -69,7 +69,6 @@ def copy_to_clipboard(text):
     except: return False
 
 def test_ping(host, port=443, timeout=2):
-    """Ping စမ်းသပ်ပြီး အချိန်ကို ပြန်ပေးတယ်"""
     try:
         ip = socket.gethostbyname(host)
         start = time.time()
@@ -79,66 +78,57 @@ def test_ping(host, port=443, timeout=2):
         s.close()
         ms = round((time.time() - start) * 1000)
         if ms < 100:
-            return f"{C.G}🟢 {ms}ms{C.rst}"
+            return ms, f"{C.G}🟢 {ms}ms{C.rst}"
         elif ms < 250:
-            return f"{C.Y}🟡 {ms}ms{C.rst}"
+            return ms, f"{C.Y}🟡 {ms}ms{C.rst}"
         else:
-            return f"{C.R}🔴 {ms}ms{C.rst}"
+            return ms, f"{C.R}🔴 {ms}ms{C.rst}"
     except:
-        return f"{C.R}❌ Timeout{C.rst}"
+        return 9999, f"{C.R}❌ Timeout{C.rst}"
 
 def extract_host_port(key):
-    """Key ထဲက Host နဲ့ Port ကို ထုတ်ယူတယ်"""
     try:
         if "://" in key:
-            # ss:// or vless:// format
             import urllib.parse
             parsed = urllib.parse.urlparse(key)
-            host = parsed.hostname or ""
-            port = parsed.port or "443"
-            return host, port
-    except:
-        pass
-    # Simple format: ip@port
+            return parsed.hostname or "", parsed.port or 443
+    except: pass
     try:
         if "@" in key and ":" in key.split("@")[-1]:
             part = key.split("@")[-1]
-            host, port = part.split(":")
-            return host.strip(), port.strip()
-    except:
-        pass
+            h, p = part.split(":")
+            return h.strip(), p.strip()
+    except: pass
     return "", ""
 
 def build_share_text(name, key, ping_info=""):
-    """Share လို့ရအောင် စာကို ဖန်တီးပေးတယ်"""
-    ping_nice = ping_info.replace(C.G,"").replace(C.Y,"").replace(C.R,"").replace(C.rst,"")
-    text = f"""🌐 VPN Server — {name}
-📶 Ping: {ping_nice}
+    ping_clean = ping_info.replace(C.G,"").replace(C.Y,"").replace(C.R,"").replace(C.rst,"")
+    return f"""🌐 VPN Server — {name}
+📶 Ping: {ping_clean}
 
 🔑 Key:
 {key}
 
 ✨ VPN Key Generator Premium
 #VPN #FreeVPN #InternetFreedom"""
-    return text
 
 def fetch_json(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=20) as response:
-            content = response.read().decode().strip()
+        with urllib.request.urlopen(req, timeout=20) as r:
+            content = r.read().decode().strip()
             try:
                 data = json.loads(content)
                 if isinstance(data, list): return data
             except: pass
             lines = content.splitlines()
-            result = []
+            res = []
             for line in lines:
                 line = line.strip()
                 if line:
-                    try: result.append(json.loads(line))
+                    try: res.append(json.loads(line))
                     except: pass
-            return result if result else None
+            return res if res else None
     except Exception as e:
         print(f"  {C.R}❌ JSON: {str(e)[:40]}{C.rst}")
         return None
@@ -173,7 +163,90 @@ def parse_key_info(key):
         return name, key
     return None, None
 
+def get_all_keys():
+    all_keys = []
+    for sid in ["1","2","3"]:
+        name, url, dtype = API_LIST[sid]
+        data = {"json":fetch_json,"b64":fetch_b64,"txt":fetch_txt}[dtype](url)
+        if not data: continue
+        if dtype=="json" and isinstance(data,list):
+            for item in data:
+                if isinstance(item,dict):
+                    key = item.get("url") or item.get("link") or ""
+                    n = item.get("name") or item.get("remarks") or "Server"
+                    if key and (key.startswith("vless://") or key.startswith("ss://")):
+                        all_keys.append({"name":n,"key":key,"source":name})
+        elif dtype in ["b64","txt"] and isinstance(data,list):
+            for k in data:
+                n, vk = parse_key_info(k)
+                if vk: all_keys.append({"name":n,"key":vk,"source":name})
+    return all_keys
+
+def show_key_detail(item, ping_ms, ping_str):
+    while True:
+        header()
+        divider(f"📡 {item['name']}")
+        print(f"  {C.C}📍 အရင်းအမြစ်:{C.rst} {item['source']}")
+        print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
+        divider()
+        print(f"  {C.G}🔑 Key:{C.rst}\n{C.W}{item['key']}{C.rst}")
+        divider()
+        share_text = build_share_text(item['name'], item['key'], ping_str)
+        print(f"\n  {C.C}[1]{C.rst} Key ကူးယူပါ")
+        print(f"  {C.C}[2]{C.rst} Share ဖို့ အကုန်ကူးယူပါ")
+        print(f"  {C.C}[F]{C.rst} အကြိုက်ဆုံးထဲသိမ်းပါ")
+        print(f"  {C.C}[Q]{C.rst} ပြန်သွားမည်")
+        sel = input("  ▶ ရွေးပါ : ").strip().upper()
+        if sel=="1":
+            copy_to_clipboard(item['key'])
+            print(f"  {C.G}✅ Key ကူးယူပြီးပါပြီ!{C.rst}\n"); input("  Enter...")
+        elif sel=="2":
+            copy_to_clipboard(share_text)
+            print(f"  {C.G}✅ Share အကုန်ကူးယူပြီးပါပြီ! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}\n"); input("  Enter...")
+        elif sel=="F":
+            save_favorite(item['name'], item['key'], ping_str)
+            print(f"  {C.G}✅ အကြိုက်ဆုံးထဲ သိမ်းပြီးပါပြီ{C.rst}\n"); input("  Enter...")
+        elif sel=="Q":
+            break
+
 def find_best_key():
+    header()
+    print(f"  {C.Y}🔍 အကောင်းဆုံး Server ကို ရှာဖွေနေသည်...{C.rst}\n")
+    all_keys = get_all_keys()
+    if not all_keys:
+        input(f"  {C.R}မရပါ။ Enter...{C.rst}"); return
+    
+    print(f"  {C.C}စုစုပေါင်း Key {len(all_keys)} လုံး တွေ့ရှိခဲ့သည် ✅{C.rst}")
+    print(f"  {C.Y}⏳ တစ်ခုချင်းစီ စမ်းသပ်နေသည်...{C.rst}\n")
+    
+    best_key = None
+    best_ping = 9999
+    
+    for i, item in enumerate(all_keys, 1):
+        host, port = extract_host_port(item['key'])
+        if not host: continue
+        sys.stdout.write(f"  🔄 {i}/{len(all_keys)} — {item['name'][:20]}...")
+        sys.stdout.flush()
+        ping_ms, ping_str = test_ping(host, port, timeout=1.5)
+        if ping_ms < best_ping:
+            best_ping = ping_ms
+            best_key = item.copy()
+            best_key["ping_ms"] = ping_ms
+            best_key["ping_str"] = ping_str
+            sys.stdout.write(f"  {C.G}✅ အသစ်အကောင်းဆုံး! {ping_str}{C.rst}\n")
+        else:
+            sys.stdout.write(f"  {ping_str}\n")
+    
+    if not best_key:
+        input(f"\n  {C.R}အလုပ်လုပ်နိုင်တဲ့ Server မတွေ့ပါ။ Enter...{C.rst}"); return
+    
+    print(f"\n{C.G}══════════════════════════════════════════════════{C.rst}")
+    print(f"{C.G}🏆 အကောင်းဆုံး — အမြန်ဆုံး Server ကို တွေ့ရှိခဲ့သည်!{C.rst}")
+    print(f"{C.G}══════════════════════════════════════════════════{C.rst}\n")
+    
+    show_key_detail(best_key, best_key["ping_ms"], best_key["ping_str"])
+
+def find_browse_keys():
     header()
     print(f"  {C.Y}🔍 ဒေတာရှာဖွေနေသည်...{C.rst}\n")
     all_keys = []; sources = []
@@ -207,47 +280,33 @@ def find_best_key():
         item=all_keys[idx]
         header()
         divider(f"Key #{idx+1}/{len(all_keys)}")
-        
-        # Ping စမ်းသပ်ခြင်း
         host, port = extract_host_port(item['key'])
         ping_info = f"{C.D}⏳ စမ်းနေသည်...{C.rst}"
         print(f"  {C.G}နာမည်:{C.rst} {item['name']}")
         print(f"  {C.C}အရင်းအမြစ်:{C.rst} {item['source']}")
         print(f"  {C.Y}📶 Ping:{C.rst} {ping_info}", end="\r", flush=True)
-        if host:
-            ping_info = test_ping(host, port)
-        else:
-            ping_info = f"{C.D}မရနိုင်ပါ{C.rst}"
-        print(f"  {C.Y}📶 Ping:{C.rst} {ping_info}    ")
-        
+        ping_ms, ping_str = test_ping(host, port) if host else (0, f"{C.D}မရနိုင်ပါ{C.rst}")
+        print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}    ")
         divider()
         print(f"  {C.Y}🔑 Key:{C.rst}\n{C.W}{item['key']}{C.rst}")
         divider()
-        
-        # Share Text ဖန်တီးခြင်း
-        share_text = build_share_text(item['name'], item['key'], ping_info)
-        
-        print(f"\n  {C.C}[1]{C.rst} Key ကူးယူပါ   {C.C}[2]{C.rst} Share ဖို့အကုန်ကူးယူပါ   {C.C}[F]{C.rst}အကြိုက်ဆုံးသိမ်း")
-        print(f"  {C.C}[←] ယခင်  {C.C}[→] နောက်  {C.C}[Q]{C.rst} ပြန်")
-        
-        sel = input("  ▶ ရွေးပါ : ").strip().upper()
+        share_text = build_share_text(item['name'], item['key'], ping_str)
+        print(f"\n  {C.C}[1]{C.rst} Key ကူး   {C.C}[2]{C.rst} Share ကူး   {C.C}[F]{C.rst}သိမ်း")
+        print(f"  {C.C}[←]ယခင်  {C.C}[→]နောက်  {C.C}[Q]{C.rst}ပြန်")
+        sel = input("  ▶ : ").strip().upper()
         if sel=="1":
             copy_to_clipboard(item['key'])
-            print(f"  {C.G}✅ Key ကူးယူပြီးပါပြီ! Telegram/Facebook မှာ Paste လုပ်ပါ{C.rst}\n")
-            input("  Enter နှိပ်ပါ...")
+            print(f"  {C.G}✅ Key ကူးယူပြီး{C.rst}\n"); input("  Enter...")
         elif sel=="2":
             copy_to_clipboard(share_text)
-            print(f"  {C.G}✅ Share ဖို့ အကုန်ကူးယူပြီးပါပြီ! ✨{C.rst}")
-            print(f"  {C.C}👉 Telegram / Facebook / TikTok မှာ တိုက်ရိုက် Paste လုပ်လို့ရပါတယ်{C.rst}\n")
-            input("  Enter နှိပ်ပါ...")
+            print(f"  {C.G}✅ Share အကုန်ကူးယူပြီး! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}\n"); input("  Enter...")
         elif sel=="F":
-            save_favorite(item['name'], item['key'], ping_info)
-            print(f"  {C.G}✅ အကြိုက်ဆုံးထဲ သိမ်းပြီးပါပြီ{C.rst}\n")
-            input("  Enter နှိပ်ပါ...")
-        elif sel=="":
-            if idx+1<len(all_keys): idx+=1
-        elif sel=="B" or sel=="P":
+            save_favorite(item['name'], item['key'], ping_str)
+            print(f"  {C.G}✅ သိမ်းပြီး{C.rst}\n"); input("  Enter...")
+        elif sel=="B" or sel=="P" or sel=="":
             if idx>0: idx-=1
+        elif sel=="N":
+            if idx+1<len(all_keys): idx+=1
         elif sel=="Q":
             break
 
@@ -288,15 +347,17 @@ def main_menu():
         header()
         print(f"  {C.Y}📂 ပင်မမီနူး{C.rst}\n")
         divider()
-        print(f"  {C.G}⭐ [0] အကောင်းဆုံး Key ရှာမည် — အကြံပြု{C.rst}\n")
+        print(f"  {C.G}🏆 [0] အမြန်ဆုံးအကောင်းဆုံးကို ရွေးပေးပါ — အကြံပြု{C.rst}")
+        print(f"  {C.C}📋 [B] အားလုံးကို ကြည့်ပြီး ရွေးချယ်မည်{C.rst}\n")
         print(f"  {C.C}[1]{C.rst} Shadowmere JSON")
         print(f"  {C.C}[2]{C.rst} Shadowmere Base64")
         print(f"  {C.C}[3]{C.rst} VLESS List")
         print(f"  {C.C}[4]{C.rst} ⭐ အကြိုက်ဆုံးများ\n")
         print(f"  {C.R}[9]{C.rst} ထွက်မည်")
         divider()
-        ch=input("  ▶ ရွေးပါ : ").strip()
+        ch=input("  ▶ ရွေးပါ : ").strip().upper()
         if ch=="0": find_best_key()
+        elif ch=="B": find_browse_keys()
         elif ch=="9": clear(); print(f"\n  {C.C}👋 ကျေးဇူးတင်ပါတယ်။{C.rst}\n"); sys.exit(0)
         elif ch=="4": favorites_menu()
         elif ch in API_LIST:
@@ -324,13 +385,13 @@ def main_menu():
                 if 0<=idx<len(items):
                     it=items[idx]; header(); divider(it['name'])
                     host, port = extract_host_port(it['key'])
-                    ping_info = test_ping(host, port) if host else f"{C.D}မရနိုင်ပါ{C.rst}"
-                    print(f"  {C.Y}📶 Ping:{C.rst} {ping_info}")
+                    ping_ms, ping_str = test_ping(host, port) if host else (0, f"{C.D}မရနိုင်ပါ{C.rst}")
+                    print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
                     print(f"  {C.G}🔑 Key:{C.rst}\n{C.W}{it['key']}{C.rst}")
                     divider()
-                    share_text = build_share_text(it['name'], it['key'], ping_info)
+                    share_text = build_share_text(it['name'], it['key'], ping_str)
                     while True:
-                        print(f"\n  {C.C}[1]{C.rst}Key ကူး   {C.C}[2]{C.rst}Share အကုန်ကူး   {C.C}[F]{C.rst}သိမ်း   {C.C}[Q]{C.rst}ပြန်")
+                        print(f"\n  {C.C}[1]{C.rst}Key ကူး   {C.C}[2]{C.rst}Share ကူး   {C.C}[F]{C.rst}သိမ်း   {C.C}[Q]{C.rst}ပြန်")
                         a=input("  ▶ : ").strip().upper()
                         if a=="1":
                             copy_to_clipboard(it['key'])
@@ -339,7 +400,7 @@ def main_menu():
                             copy_to_clipboard(share_text)
                             print(f"  {C.G}✅ Share အကုန်ကူးယူပြီး! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}")
                         elif a=="F":
-                            save_favorite(it['name'], it['key'], ping_info)
+                            save_favorite(it['name'], it['key'], ping_str)
                             print(f"  {C.G}✅ သိမ်းပြီး{C.rst}")
                         elif a=="Q":
                             break
