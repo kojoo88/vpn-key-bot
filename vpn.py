@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import urllib.request, urllib.error, json, base64, os, sys, socket, time
 
-VERSION = "2.4"
+os.environ["TERM"] = "xterm-256color"
+
+VERSION = "2.5"
 
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
@@ -91,32 +93,39 @@ def extract_host_port(link):
 
 def header():
     clear()
-    print("\033[92m")
-    print("╔══════════════════════════════════════════════════════╗")
-    print("║           🔑   V P N   K E Y   T O O L                 ║")
-    print(f"║               Version {VERSION}  •  Real Working Only               ║")
-    print("╚══════════════════════════════════════════════════════╝")
-    print("\033[93m")
-    print("  [*] Status    : Online ✅")
-    print("  [*] Source    : Shadowmere + VLESS")
-    print("  [*] Filter    : Showing only working servers")
-    print("\033[90m" + "─" * 54 + "\033[0m")
+    print("\033[95m")
+    print("╔══════════════════════════════════════════════════════════╗")
+    print("║           🔑  V P N   K E Y   T O O L                      ║")
+    print(f"║               Version {VERSION}  •  Real Working Only                   ║")
+    print("╚══════════════════════════════════════════════════════════╝")
+    print("\033[96m")
+    print("┌──────────────────────────────────────────────────────────┐")
+    print("│  [✓] Status    : Online ✅                                │")
+    print("│  [📡] Source    : Shadowmere + VLESS                       │")
+    print("│  [🔍] Filter    : Only working servers                    │")
+    print("│  [⚡] Mode      : Auto Scan + Ping Check                   │")
+    print("└──────────────────────────────────────────────────────────┘")
+    print("\033[90m" + "─" * 60 + "\033[0m")
     print()
 
 def api_menu():
     while True:
         header()
         print("  🔌 API အရင်းအမြစ် ရွေးချယ်ပါ")
-        print("  " + "─" * 30)
-        for k, v in API_LIST.items():
-            print(f"  [{k}] {v[0]}")
-        print("  [0]  ❌ ထွက်ရန်")
+        print("  " + "─" * 45)
+        print("  ┌──────────────────────────────────────────────┐")
+        print("  │  [1] 🌐 Shadowmere JSON                      │")
+        print("  │  [2] 🔐 Shadowmere Base64                    │")
+        print("  │  [3] 📋 VLESS List                           │")
+        print("  └──────────────────────────────────────────────┘")
+        print("  │  [0] ❌ ထွက်ရန်                              │")
+        print("  └──────────────────────────────────────────────┘")
         print()
         ch = input("  ➤ ရွေးချယ်မှု: ").strip()
         
         if ch == "0":
             clear()
-            print("  ✅ ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။")
+            print("\n  ✅ ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။\n")
             sys.exit(0)
         if ch in API_LIST:
             return API_LIST[ch]
@@ -125,23 +134,30 @@ def country_menu(data, api_type):
     while True:
         header()
         print("  🌍 နိုင်ငံရွေးချယ်ပါ")
-        print("  " + "─" * 30)
-        print("  [1] အားလုံး      [5] 🇯🇵 JP Japan")
-        print("  [2] 🇺🇸 US       [6] 🇰🇷 KR Korea")
-        print("  [3] 🇸🇬 SG       [7] 🇿🇦 ZA SA")
-        print("  [4] 🇭🇰 HK       [8] 🔙 API ပြန်ရွေးရန်")
-        print("  [0] ❌ ထွက်ရန်")
+        print("  " + "─" * 45)
+        print("  ┌──────────────────────────────────────────────┐")
+        print("  │  [1] 🌏 အားလုံး                                │")
+        print("  │  [2] 🇺🇸 US United States                      │")
+        print("  │  [3] 🇸🇬 SG Singapore                          │")
+        print("  │  [4] 🇭🇰 HK Hong Kong                          │")
+        print("  │  [5] 🇯🇵 JP Japan                              │")
+        print("  │  [6] 🇰🇷 KR Korea                              │")
+        print("  │  [7] 🇿🇦 ZA South Africa                       │")
+        print("  ├──────────────────────────────────────────────┘")
+        print("  │  [8] 🔙 API မီနူးသို့ ပြန်သွားရန်               │")
+        print("  │  [0] ❌ ထွက်ရန်                              │")
+        print("  └──────────────────────────────────────────────┘")
         print()
         ch = input("  ➤ ရွေးချယ်မှု: ").strip()
         
         if ch == "0":
             clear()
-            print("  ✅ ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။")
+            print("\n  ✅ ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။\n")
             sys.exit(0)
         if ch == "8":
             return
         if not data:
-            input("  ❌ ဒေတာမရှိပါ။ ပြန်ကြိုးစားပါ။ Enter...")
+            input("\n  ❌ ဒေတာမရှိပါ။ ပြန်ကြိုးစားပါ။ Enter...")
             continue
         
         filters = {
@@ -173,9 +189,9 @@ def country_menu(data, api_type):
         
         clear()
         title = {v:k for k,v in filters.items()}.get(kw, "အားလုံး")
-        print("\033[92m" + "─" * 55 + "\033[0m")
-        print(f"  📌 {title}  —  စစ်ဆေးနေသည်... စောင့်ပါ")
-        print("\033[92m" + "─" * 55 + "\033[0m")
+        print("\033[95m╔══════════════════════════════════════════════════════════╗\033[0m")
+        print(f"\033[96m  📌 {title}  —  စစ်ဆေးနေသည်... ကျေးဇူးပြု၍ စောင့်ပါ\033[0m")
+        print("\033[95m╚══════════════════════════════════════════════════════════╝\033[0m")
         
         working = []
         for idx, item in enumerate(results, 1):
@@ -197,16 +213,16 @@ def country_menu(data, api_type):
                 print(f"     {status}")
                 print(f"     {key}")
         
-        print("\n\033[92m" + "─" * 55 + "\033[0m")
+        print("\n\033[95m" + "─" * 60 + "\033[0m")
         print(f"  ✅ စုစုပေါင်း: {len(working)} / {len(results)} လုံး အလုပ်လုပ်နေသည်")
-        print("\033[92m" + "─" * 55 + "\033[0m")
-        input("  မီနူးသို့ပြန်ရန် Enter...")
+        print("\033[95m" + "─" * 60 + "\033[0m")
+        input("\n  မီနူးသို့ပြန်ရန် Enter နှိပ်ပါ...")
 
 def main():
     while True:
         name, url, dtype = api_menu()
         header()
-        print(f"  🔄 ဒေတာရယူနေသည်...")
+        print("  🔄 ဒေတာရယူနေသည်... ကျေးဇူးပြု၍ စောင့်ပါ\n")
         
         data = None
         if dtype == "json":
@@ -217,7 +233,7 @@ def main():
             data = fetch_txt(url)
         
         if not data:
-            input("  ❌ ဒေတာရယူ၍မရပါ။ လင့်ခ်သေခြင်း သို့မဟုတ် အင်တာနက်ပြဿနာ။ Enter...")
+            input("\n  ❌ ဒေတာရယူ၍မရပါ။ လင့်ခ်သေခြင်း သို့မဟုတ် အင်တာနက်ပြဿနာ။ Enter...")
             continue
         
         while True:
@@ -229,6 +245,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         clear()
-        print("\n\n  ✅ ထွက်လိုက်ပါပြီ။")
+        print("\n\n  ✅ ထွက်လိုက်ပါပြီ။\n")
         sys.exit(0)
-    
