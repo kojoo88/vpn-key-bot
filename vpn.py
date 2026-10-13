@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import urllib.request, urllib.error, json, base64, os, sys, socket, time
 
-VERSION = "2.3"
+VERSION = "2.4"
 
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
@@ -91,10 +91,16 @@ def extract_host_port(link):
 
 def header():
     clear()
-    print("─" * 55)
-    print(f"     🔑 VPN KEY TOOL  v{VERSION}")
-    print("      တကယ်အလုပ်လုပ်သည်များကိုသာ ပြပါမည်")
-    print("─" * 55)
+    print("\033[92m")
+    print("╔══════════════════════════════════════════════════════╗")
+    print("║           🔑   V P N   K E Y   T O O L                 ║")
+    print(f"║               Version {VERSION}  •  Real Working Only               ║")
+    print("╚══════════════════════════════════════════════════════╝")
+    print("\033[93m")
+    print("  [*] Status    : Online ✅")
+    print("  [*] Source    : Shadowmere + VLESS")
+    print("  [*] Filter    : Showing only working servers")
+    print("\033[90m" + "─" * 54 + "\033[0m")
     print()
 
 def api_menu():
@@ -167,9 +173,9 @@ def country_menu(data, api_type):
         
         clear()
         title = {v:k for k,v in filters.items()}.get(kw, "အားလုံး")
-        print("─" * 55)
+        print("\033[92m" + "─" * 55 + "\033[0m")
         print(f"  📌 {title}  —  စစ်ဆေးနေသည်... စောင့်ပါ")
-        print("─" * 55)
+        print("\033[92m" + "─" * 55 + "\033[0m")
         
         working = []
         for idx, item in enumerate(results, 1):
@@ -191,9 +197,9 @@ def country_menu(data, api_type):
                 print(f"     {status}")
                 print(f"     {key}")
         
-        print("\n" + "─" * 55)
+        print("\n\033[92m" + "─" * 55 + "\033[0m")
         print(f"  ✅ စုစုပေါင်း: {len(working)} / {len(results)} လုံး အလုပ်လုပ်နေသည်")
-        print("─" * 55)
+        print("\033[92m" + "─" * 55 + "\033[0m")
         input("  မီနူးသို့ပြန်ရန် Enter...")
 
 def main():
@@ -225,4 +231,4 @@ if __name__ == "__main__":
         clear()
         print("\n\n  ✅ ထွက်လိုက်ပါပြီ။")
         sys.exit(0)
-            
+    
