@@ -8,8 +8,18 @@ import os
 import sys
 
 os.environ["TERM"] = "xterm-256color"
-VERSION = "4.7 ✨ PREMIUM"
+VERSION = "4.8 ✨ PREMIUM"
 FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
+
+class Colors:
+    P = "\033[95m"
+    C = "\033[96m"
+    G = "\033[92m"
+    Y = "\033[93m"
+    R = "\033[91m"
+    W = "\033[97m"
+    D = "\033[90m"
+    rst = "\033[0m"
 
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
@@ -18,24 +28,19 @@ API_LIST = {
 }
 
 def clear(): os.system("clear")
-
-class Colors:
-    P = "\033[95m"; C = "\033[96m"; G = "\033[92m"
-    Y = "\033[93m"; R = "\033[91m"; W = "\033[97m"
-    D = "\033[90m"; rst = "\033[0m"
-c = Colors()
+C = Colors()
 
 def header():
     clear()
     fav_count = len(load_favorites())
-    print(f"{c.P}╔════════════════════════════════════════╗{c.rst}")
-    print(f"{c.P}║{c.rst}{c.Y}  ✨ VPN KEY GENERATOR PREMIUM v{VERSION.split()[1]} ✨{c.rst}{c.P}║{c.rst}")
-    print(f"{c.P}╠════════════════════════════════════════╣{c.rst}")
-    print(f"{c.P}║{c.rst}  {c.C}📡 Status:{c.rst} Online ✅  |  {c.C}⭐ Favorites:{c.rst} {fav_count}{c.P}║{c.rst}")
-    print(f"{c.P}╚════════════════════════════════════════╝{c.rst}\n")
+    print(f"{C.P}╔════════════════════════════════════════╗{C.rst}")
+    print(f"{C.P}║{C.rst}{C.Y}  ✨ VPN KEY GENERATOR PREMIUM v{VERSION.split()[1]} ✨{C.rst}{C.P}║{C.rst}")
+    print(f"{C.P}╠════════════════════════════════════════╣{C.rst}")
+    print(f"{C.P}║{C.rst}  {C.C}📡 Status:{C.rst} Online ✅  |  {C.C}⭐ Favorites:{C.rst} {fav_count}{C.P}║{C.rst}")
+    print(f"{C.P}╚════════════════════════════════════════╝{C.rst}\n")
 
 def divider(title=""):
-    print(f"{c.C}─── {title} {'─'*(40-len(title))}{c.rst}" if title else f"{c.D}─"*45+c.rst)
+    print(f"{C.C}─── {title} {'─'*(40-len(title))}{C.rst}" if title else f"{C.D}─"*45+C.rst)
 
 def load_favorites():
     if not os.path.exists(FAV_FILE): return []
@@ -61,7 +66,6 @@ def copy_to_clipboard(text):
         return True
     except: return False
 
-# ✅ ပြင်ပြီးသား ဖြစ်တဲ့ fetch_json function
 def fetch_json(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -80,7 +84,7 @@ def fetch_json(url):
                     except: pass
             return result if result else None
     except Exception as e:
-        print(f"  {c.R}❌ JSON: {str(e)[:40]}{c.rst}")
+        print(f"  {C.R}❌ JSON: {str(e)[:40]}{C.rst}")
         return None
 
 def fetch_b64(url):
@@ -89,7 +93,7 @@ def fetch_b64(url):
         with urllib.request.urlopen(req, timeout=20) as r:
             return [l.strip() for l in base64.b64decode(r.read()).decode().splitlines() if l.strip()]
     except Exception as e:
-        print(f"  {c.R}❌ Base64: {str(e)[:40]}{c.rst}")
+        print(f"  {C.R}❌ Base64: {str(e)[:40]}{C.rst}")
         return None
 
 def fetch_txt(url):
@@ -98,7 +102,7 @@ def fetch_txt(url):
         with urllib.request.urlopen(req, timeout=20) as r:
             return [l.strip() for l in r.read().decode().splitlines() if l.strip() and not l.startswith("#")]
     except Exception as e:
-        print(f"  {c.R}❌ TXT: {str(e)[:40]}{c.rst}")
+        print(f"  {C.R}❌ TXT: {str(e)[:40]}{C.rst}")
         return None
 
 def parse_key_info(key):
@@ -115,16 +119,16 @@ def parse_key_info(key):
 
 def find_best_key():
     header()
-    print(f"  {Colors.Y}🔍 ရှာဖွေနေသည်...{Colors.rst}\n")
+    print(f"  {C.Y}🔍 ရှာဖွေနေသည်...{C.rst}\n")
     all_keys = []; sources = []
     for sid in ["1","2","3"]:
         name, url, dtype = API_LIST[sid]
         print(f"  ⬜ {name}...", end="", flush=True)
         data = {"json":fetch_json,"b64":fetch_b64,"txt":fetch_txt}[dtype](url)
-        print(f" {c.G}✅{c.rst}" if data else f" {c.R}❌{c.rst}")
+        print(f" {C.G}✅{C.rst}" if data else f" {C.R}❌{C.rst}")
         if data: sources.append((name,data,dtype))
     if not sources:
-        input(f"\n  {c.R}မရပါ။ Enter နှိပ်ပါ...{c.rst}"); return
+        input(f"\n  {C.R}မရပါ။ Enter နှိပ်ပါ...{C.rst}"); return
     for sname, data, dtype in sources:
         cnt=0
         if dtype=="json" and isinstance(data,list):
@@ -140,57 +144,57 @@ def find_best_key():
                 if vk: all_keys.append({"name":n,"key":vk,"source":sname}); cnt+=1
         print(f"     → {sname}: Key {cnt} လုံး")
     if not all_keys:
-        input(f"\n  {c.R}Key မတွေ့ပါ။ Enter...{c.rst}"); return
-    print(f"\n  {c.G}စုစုပေါင်း Key {len(all_keys)} လုံး ✅{c.rst}\n")
+        input(f"\n  {C.R}Key မတွေ့ပါ။ Enter...{C.rst}"); return
+    print(f"\n  {C.G}စုစုပေါင်း Key {len(all_keys)} လုံး ✅{C.rst}\n")
     idx=0
     while True:
         item=all_keys[idx]
         header(); divider(f"Key #{idx+1}/{len(all_keys)}")
-        print(f"  {c.G}နာမည်:{c.rst} {item['name']}")
-        print(f"  {c.C}အရင်းအမြစ်:{c.rst} {item['source']}")
-        divider(); print(f"  {c.Y}Key:{c.rst}\n{c.W}{item['key']}{c.rst}"); divider()
-        if copy_to_clipboard(item['key']): print(f"  {c.G}✅ ကူးယူပြီးပါပြီ{c.rst}")
-        else: print(f"  {c.Y}အပေါ်က Key ကို ကူးယူပါ{c.rst}")
-        print(f"\n  {c.C}[F]{c.rst}သိမ်း  {c.C}[N]{c.rst}နောက်တစ်ခု  {c.C}[P]{c.rst}ယခင်  {c.C}[Q]{c.rst}ပြန်")
+        print(f"  {C.G}နာမည်:{C.rst} {item['name']}")
+        print(f"  {C.C}အရင်းအမြစ်:{C.rst} {item['source']}")
+        divider(); print(f"  {C.Y}Key:{C.rst}\n{C.W}{item['key']}{C.rst}"); divider()
+        if copy_to_clipboard(item['key']): print(f"  {C.G}✅ ကူးယူပြီးပါပြီ{C.rst}")
+        else: print(f"  {C.Y}အပေါ်က Key ကို ကူးယူပါ{C.rst}")
+        print(f"\n  {C.C}[F]{C.rst}သိမ်း  {C.C}[N]{C.rst}နောက်တစ်ခု  {C.C}[P]{C.rst}ယခင်  {C.C}[Q]{C.rst}ပြန်")
         c = input("  ▶ : ").strip().upper()
-        if c=="F": save_favorite(item['name'],item['key']); print(f"  {c.G}✅ သိမ်းပြီး{c.rst}\n"); input("  Enter...")
+        if c=="F": save_favorite(item['name'],item['key']); print(f"  {C.G}✅ သိမ်းပြီး{C.rst}\n"); input("  Enter...")
         elif c=="N" and idx+1<len(all_keys): idx+=1
         elif c=="P" and idx>0: idx-=1
         elif c=="Q": break
 
 def favorites_menu():
     while True:
-        header(); favs=load_favorites(); print(f"  {c.Y}⭐ အကြိုက်ဆုံးများ{c.rst}\n"); divider()
-        if not favs: print(f"  {c.D}မရှိသေးပါ။ Key ရတဲ့အခါ [F] နှိပ်ပါ။{c.rst}")
+        header(); favs=load_favorites(); print(f"  {C.Y}⭐ အကြိုက်ဆုံးများ{C.rst}\n"); divider()
+        if not favs: print(f"  {C.D}မရှိသေးပါ။ Key ရတဲ့အခါ [F] နှိပ်ပါ။{C.rst}")
         else:
             for i,e in enumerate(favs,1):
-                if "|" in e: n,k=e.split("|",1); print(f"  {c.C}[{i}]{c.rst} {n}"); print(f"      {c.W}{k}{c.rst}"); copy_to_clipboard(k) and print(f"      {c.G}✅ ကူးယူပြီး{c.rst}")
-        divider(); print(f"  {c.C}[Q]{c.rst}ပြန်  {c.C}[A]{c.rst}အားလုံးဖျက်")
+                if "|" in e: n,k=e.split("|",1); print(f"  {C.C}[{i}]{C.rst} {n}"); print(f"      {C.W}{k}{C.rst}"); copy_to_clipboard(k) and print(f"      {C.G}✅ ကူးယူပြီး{C.rst}")
+        divider(); print(f"  {C.C}[Q]{C.rst}ပြန်  {C.C}[A]{C.rst}အားလုံးဖျက်")
         sel=input("  ▶ : ").strip().upper()
         if sel=="Q": break
-        elif sel=="A" and input(f"  {c.R}ဖျက်မှာလား? y/n:{c.rst}").lower()=="y":
+        elif sel=="A" and input(f"  {C.R}ဖျက်မှာလား? y/n:{C.rst}").lower()=="y":
             os.path.exists(FAV_FILE) and os.remove(FAV_FILE); break
 
 def main_menu():
     while True:
         header()
-        print(f"  {c.Y}📂 ပင်မမီနူး{c.rst}\n"); divider()
-        print(f"  {c.G}⭐ [0] အကောင်းဆုံး Key ရှာမည် — အကြံပြု{c.rst}\n")
-        print(f"  {c.C}[1]{c.rst} Shadowmere JSON")
-        print(f"  {c.C}[2]{c.rst} Shadowmere Base64")
-        print(f"  {c.C}[3]{c.rst} VLESS List")
-        print(f"  {c.C}[4]{c.rst} ⭐ အကြိုက်ဆုံးများ\n")
-        print(f"  {c.R}[9]{c.rst} ထွက်မည်")
+        print(f"  {C.Y}📂 ပင်မမီနူး{C.rst}\n"); divider()
+        print(f"  {C.G}⭐ [0] အကောင်းဆုံး Key ရှာမည် — အကြံပြု{C.rst}\n")
+        print(f"  {C.C}[1]{C.rst} Shadowmere JSON")
+        print(f"  {C.C}[2]{C.rst} Shadowmere Base64")
+        print(f"  {C.C}[3]{C.rst} VLESS List")
+        print(f"  {C.C}[4]{C.rst} ⭐ အကြိုက်ဆုံးများ\n")
+        print(f"  {C.R}[9]{C.rst} ထွက်မည်")
         divider()
         ch=input("  ▶ ရွေးပါ : ").strip()
         if ch=="0": find_best_key()
-        elif ch=="9": clear(); print(f"\n  {c.C}👋 ကျေးဇူးတင်ပါတယ်။{c.rst}\n"); sys.exit(0)
+        elif ch=="9": clear(); print(f"\n  {C.C}👋 ကျေးဇူးတင်ပါတယ်။{C.rst}\n"); sys.exit(0)
         elif ch=="4": favorites_menu()
         elif ch in API_LIST:
             name,url,dtype=API_LIST[ch]
-            header(); print(f"  {c.Y}{name} မှ ဒေတာရယူနေသည်...{c.rst}\n")
+            header(); print(f"  {C.Y}{name} မှ ဒေတာရယူနေသည်...{C.rst}\n")
             data = {"json":fetch_json,"b64":fetch_b64,"txt":fetch_txt}[dtype](url)
-            if not data: input(f"  {c.R}မရပါ။ Enter...{c.rst}"); continue
+            if not data: input(f"  {C.R}မရပါ။ Enter...{C.rst}"); continue
             items=[]
             if dtype=="json" and isinstance(data,list):
                 for item in data:
@@ -202,23 +206,23 @@ def main_menu():
                 for k in data:
                     n,vk=parse_key_info(k)
                     if vk: items.append({"name":n,"key":vk})
-            if not items: input(f"  {c.R}Key မတွေ့ပါ။ အခြားရွေးပါ။ Enter...{c.rst}"); continue
-            for i,x in enumerate(items,1): print(f"  {c.C}[{i}]{c.rst} {x['name']}")
+            if not items: input(f"  {C.R}Key မတွေ့ပါ။ အခြားရွေးပါ။ Enter...{C.rst}"); continue
+            for i,x in enumerate(items,1): print(f"  {C.C}[{i}]{C.rst} {x['name']}")
             sel=input(f"\n  ▶ နံပါတ်ရွေးပါ [Q]ပြန် : ").strip().upper()
             if sel=="Q": continue
             try:
                 idx=int(sel)-1
                 if 0<=idx<len(items):
                     it=items[idx]; header(); divider(it['name'])
-                    print(f"  {c.G}Key:{c.rst}\n{c.W}{it['key']}{c.rst}"); divider()
-                    copy_to_clipboard(it['key']) and print(f"  {c.G}✅ ကူးယူပြီး{c.rst}")
+                    print(f"  {C.G}Key:{C.rst}\n{C.W}{it['key']}{C.rst}"); divider()
+                    copy_to_clipboard(it['key']) and print(f"  {C.G}✅ ကူးယူပြီး{C.rst}")
                     while True:
-                        a=input(f"  {c.C}[F]{c.rst}သိမ်း  {c.C}[Q]{c.rst}ပြန် : ").strip().upper()
-                        if a=="F": save_favorite(it['name'],it['key']); print(f"  {c.G}✅ သိမ်းပြီး{c.rst}\n"); input("  Enter...")
+                        a=input(f"  {C.C}[F]{C.rst}သိမ်း  {C.C}[Q]{C.rst}ပြန် : ").strip().upper()
+                        if a=="F": save_favorite(it['name'],it['key']); print(f"  {C.G}✅ သိမ်းပြီး{C.rst}\n"); input("  Enter...")
                         elif a=="Q": break
             except: pass
 
 if __name__=="__main__":
     try: main_menu()
-    except KeyboardInterrupt: clear(); print(f"\n  {c.C}👋 ပြီးပါပြီ။{c.rst}\n"); sys.exit(0)
+    except KeyboardInterrupt: clear(); print(f"\n  {C.C}👋 ပြီးပါပြီ။{C.rst}\n"); sys.exit(0)
     
