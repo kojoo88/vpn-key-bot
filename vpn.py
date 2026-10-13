@@ -3,7 +3,7 @@ import urllib.request, urllib.error, json, base64, os, sys, socket, time
 
 os.environ["TERM"] = "xterm-256color"
 
-VERSION = "3.0"
+VERSION = "3.1"
 
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
@@ -15,12 +15,13 @@ def clear(): os.system("clear")
 
 def test_ping(host, port, timeout=2):
     try:
-        if not host:
+        if not host or not port:
             return "⚠️ စမ်းသပ်၍မရ"
+        port = int(port)
         start = time.time()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
-        result = sock.connect_ex((host, int(port)))
+        result = sock.connect_ex((host, port))
         sock.close()
         ms = round((time.time() - start) * 1000)
         if result == 0:
@@ -67,11 +68,16 @@ def fetch_txt(url):
 
 def make_ss_key(s):
     try:
-        info = f"{s['method']}:{s['password']}"
+        host = s.get("serverAddress", s.get("server", ""))
+        port = s.get("serverPort", s.get("port", s.get("server_port", "")))
+        method = s.get("method", "")
+        password = s.get("password", "")
+        info = f"{method}:{password}"
         b64 = base64.b64encode(info.encode()).decode().rstrip("=")
-        return f"ss://{b64}@{s['server']}:{s['server_port']}#{s['remarks']}"
-    except:
-        return "❌ အမှား"
+        remarks = s.get("remarks", s.get("name", "Server"))
+        return f"ss://{b64}@{host}:{port}#{remarks}"
+    except Exception as e:
+        return f"❌ အမှား: {str(e)}"
 
 def extract_host_port(link):
     try:
@@ -88,8 +94,11 @@ def extract_host_port(link):
                 port = after.split(":")[1].split("?")[0]
                 return host, int(port)
             elif ":" in after:
-                host, port = after.split(":")
-                return host, int(port.split("/")[0])
+                host_part = after.split("/")[0]
+                if ":" in host_part:
+                    host, port = host_part.split(":")
+                    return host, int(port)
+                return host_part, 443
             else:
                 return after.split("/")[0], 443
     except:
@@ -108,15 +117,14 @@ def header():
     p = "\033[95m"
     c = "\033[96m"
     y = "\033[93m"
-    r = "\033[91m"
     rst = "\033[0m"
     print(f"{p}╔══════════════════════════════════════════════════════════════════╗{rst}")
     print(f"{p}║{rst}        ✨  {c}V P N   K E Y   G E N E R A T O R{rst}  ✨              {p}║{rst}")
     print(f"{p}║{rst}           {y}Version {VERSION}  •  Auto Scan  •  Real Time Ping{rst}              {p}║{rst}")
     print(f"{p}╚══════════════════════════════════════════════════════════════════╝{rst}")
     print(f"{c}┌────────────────────────────────────────────────────────────────────┐{rst}")
-    print(f"{c}│{rst}  📡 Status  : Online ✅         🔍 Filter : အလုပ်လုပ်သာ ပြပါမည်        {c}│{rst}")
-    print(f"{c}│{rst}  🌐 Source  : Shadowmere + VLESS  ⚡ Speed : Real-time Ping Test       {c}│{rst}")
+    print(f"{c}│{rst}  📡 Status  : Online ✅         🔍 Filter : အားလုံးပြသနေသည်         {c}│{rst}")
+    print(f"{c}│{rst}  🌐 Source  : Shadowmere + VLESS  ⚡ Note : Ping အချက်အလက် ကိုးကားရန်သာ{c}│{rst}")
     print(f"{c}└────────────────────────────────────────────────────────────────────┘{rst}")
     print(f"{y}{'─' * 68}{rst}")
     print()
@@ -192,7 +200,7 @@ def country_menu(data, api_type):
         
         if api_type == "json":
             for s in data:
-                rmk = s.get("remarks", "").lower()
+                rmk = str(s.get("remarks", s.get("name", ""))).lower()
                 if not kw or any(k in rmk for k in kw.split()):
                     results.append(s)
         else:
@@ -204,34 +212,34 @@ def country_menu(data, api_type):
         clear()
         title = {v:k for k,v in filters.items()}.get(kw, "အားလုံး")
         print("\033[95m╔══════════════════════════════════════════════════════════╗\033[0m")
-        print(f"\033[96m  📌 {title} Servers  •  စစ်ဆေးနေသည်... စောင့်ပါ\033[0m")
+        print(f"\033[96m  📌 {title} Servers  •  စုစုပေါင်း {len(results)} လုံး\033[0m")
         print("\033[95m╚══════════════════════════════════════════════════════════╝\033[0m")
         
         working = []
         for idx, item in enumerate(results, 1):
             if api_type == "json":
-                host = item.get("server", "")
-                port = item.get("server_port", 0)
-                name = item.get("remarks", f"Server {idx}")
+                host = item.get("serverAddress", item.get("server", ""))
+                port = item.get("serverPort", item.get("port", item.get("server_port", "")))
+                name = item.get("remarks", item.get("name", f"Server {idx}"))
                 key = make_ss_key(item)
             else:
                 key = item
                 host, port = extract_host_port(item)
                 name = f"Server {idx}"
             
-            status = test_ping(host, port) if host else "⚠️ စမ်းသပ်၍မရ"
+            status = test_ping(host, port) if host and port else "⚠️ စမ်းသပ်၍မရ"
             
-            if "🟢" in status or "🟡" in status:
-                working.append((idx, name, key, status))
-                print(f"\n  ┌─────────────────────────────────────────────┐")
-                print(f"  │ 📍 {name}")
-                print(f"  │ ⚡ {status}")
-                print(f"  ├─────────────────────────────────────────────┤")
-                print(f"  │ 🔑 {key}")
-                print(f"  └─────────────────────────────────────────────┘")
+            working.append((idx, name, key, status))
+            print(f"\n  ┌─────────────────────────────────────────────┐")
+            print(f"  │ 📍 {name}")
+            print(f"  │ ⚡ {status}")
+            print(f"  ├─────────────────────────────────────────────┤")
+            print(f"  │ 🔑 {key}")
+            print(f"  └─────────────────────────────────────────────┘")
         
         print("\n\033[93m" + "─" * 60 + "\033[0m")
-        print(f"  📊 ရလဒ် : စုစုပေါင်း {len(working)} / {len(results)} လုံး အလုပ်လုပ်နေသည်")
+        print(f"  📊 စုစုပေါင်း: {len(working)} / {len(results)} လုံး ပြသပြီး")
+        print("  💡 မှတ်ချက်- Ping မအောင်မြင်သော်လည်း ကိုယ်တိုင်စမ်းကြည့်ပါ")
         print("\033[93m" + "─" * 60 + "\033[0m")
         input("\n  မီနူးသို့ပြန်ရန် Enter နှိပ်ပါ...")
 
@@ -264,4 +272,3 @@ if __name__ == "__main__":
         clear()
         print("\n\n  👋 ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။\n")
         sys.exit(0)
-            
