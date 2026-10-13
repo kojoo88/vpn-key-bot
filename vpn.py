@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# VPN Key Generator — Premium Edition v4.4
-# ပြင်ဆင်ချက်: Ping စစ်ခြင်းကို ဖယ်ရှား၊ Key များကို အမြန်ပြသပေးသည်
+# VPN Key Generator — Premium Edition v4.5
+# ပြင်ဆင်ချက်: Key parsing ပြဿနာဖြေရှင်း၊ VLESS/SS Key မှန်ကန်စွာထုတ်ယူ
 
 import urllib.request
 import urllib.error
@@ -8,11 +8,11 @@ import json
 import base64
 import os
 import sys
-import time
+import re
 
 os.environ["TERM"] = "xterm-256color"
 
-VERSION = "4.4 ✨ PREMIUM"
+VERSION = "4.5 ✨ PREMIUM"
 FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
 
 API_LIST = {
@@ -97,7 +97,7 @@ def fetch_json(url):
         with urllib.request.urlopen(req, timeout=15) as response:
             return json.loads(response.read().decode())
     except Exception as e:
-        print(f"  {c.D}     → အမှား: {str(e)[:30]}{c.rst}")
+        print(f"  {c.R}❌ JSON: {str(e)[:40]}{c.rst}")
         return None
 
 
@@ -106,9 +106,10 @@ def fetch_b64(url):
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=15) as response:
             decoded = base64.b64decode(response.read()).decode()
-            return [line.strip() for line in decoded.splitlines() if line.strip()]
+            lines = [line.strip() for line in decoded.splitlines() if line.strip()]
+            return lines if lines else None
     except Exception as e:
-        print(f"  {c.D}     → အမှား: {str(e)[:30]}{c.rst}")
+        print(f"  {c.R}❌ Base64: {str(e)[:40]}{c.rst}")
         return None
 
 
@@ -117,26 +118,43 @@ def fetch_txt(url):
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=15) as response:
             content = response.read().decode()
-            return [line.strip() for line in content.splitlines() if line.strip() and not line.startswith("#")]
+            lines = [line.strip() for line in content.splitlines() if line.strip() and not line.startswith("#")]
+            return lines if lines else None
     except Exception as e:
-        print(f"  {c.D}     → အမှား: {str(e)[:30]}{c.rst}")
+        print(f"  {c.R}❌ TXT: {str(e)[:40]}{c.rst}")
         return None
 
 
+# ✅ ပြင်ဆင်ထားတဲ့ Key Parse Function — မှန်ကန်စွာထုတ်ပေးမယ်
 def parse_key_info(key):
-    try:
-        if key.startswith("ss://"):
-            parts = key.split("//")[1].split("@")
-            if len(parts) >= 2:
-                host_port = parts[1].split("#")[0].split("/")[0]
-                name = key.split("#")[-1] if "#" in key else "Server"
-                return name, key
-        elif key.startswith("vless://"):
-            name = key.split("#")[-1] if "#" in key else "Server"
+    if not key or len(key) < 10:
+        return "Invalid Server", key
+
+    # VLESS
+    if key.startswith("vless://"):
+        try:
+            if "#" in key:
+                name = key.split("#")[-1]
+                name = urllib.parse.unquote(name)
+            else:
+                name = "VLESS Server"
             return name, key
-        return "Server", key
-    except Exception:
-        return "Server", key
+        except:
+            return "VLESS Server", key
+
+    # Shadowsocks
+    elif key.startswith("ss://"):
+        try:
+            if "#" in key:
+                name = key.split("#")[-1]
+                name = urllib.parse.unquote(name)
+            else:
+                name = "Shadowsocks Server"
+            return name, key
+        except:
+            return "Shadowsocks Server", key
+
+    return "Server", key
 
 
 def find_best_key():
@@ -166,8 +184,7 @@ def find_best_key():
 
     if not sources:
         print(f"\n  {c.R}❌ မည်သည့်အရင်းအမြစ်မှ ဒေတာမရရှိပါ။{c.rst}")
-        print(f"  {c.Y}💡 ဖြေရှင်းနည်း: အင်တာနက်ချိတ်ဆက်မှုကို စစ်ပါ၊ နောက်မှ ထပ်ကြိုးစားပါ။{c.rst}")
-        input(f"  {c.D}ဆက်ရန် Enter နှိပ်ပါ...{c.rst}")
+        input(f"  {c.D}Enter နှိပ်ပါ...{c.rst}")
         return
 
     print(f"\n  {c.G}✅ အရင်းအမြစ် {len(sources)} ခု အလုပ်လုပ်နေသည်။{c.rst}")
@@ -179,17 +196,19 @@ def find_best_key():
                 if isinstance(item, dict):
                     key = item.get("url", item.get("link", ""))
                     name = item.get("name", item.get("remarks", f"Server {len(all_keys)+1}"))
-                    if key:
+                    if key and (key.startswith("vless://") or key.startswith("ss://")):
                         all_keys.append({"name": name, "key": key, "source": source_name})
 
         elif data_type in ["b64", "txt"] and isinstance(data, list):
             for key in data:
-                name, full_key = parse_key_info(key)
-                all_keys.append({"name": name, "key": full_key, "source": source_name})
+                if key.startswith("vless://") or key.startswith("ss://"):
+                    name, full_key = parse_key_info(key)
+                    all_keys.append({"name": name, "key": full_key, "source": source_name})
 
     if not all_keys:
         print(f"  {c.R}❌ မည်သည့် VPN Key မျှမတွေ့ပါ။{c.rst}")
-        input(f"  {c.D}ဆက်ရန် Enter နှိပ်ပါ...{c.rst}")
+        print(f"  {c.Y}💡 ဖြေရှင်းနည်း: နောက်မှ ထပ်ကြိုးစားပါ သို့မဟုတ် အခြားအရင်းအမြစ်ကို သုံးကြည့်ပါ။{c.rst}")
+        input(f"  {c.D}Enter နှိပ်ပါ...{c.rst}")
         return
 
     print(f"  {c.G}✅ စုစုပေါင်း Key {len(all_keys)} လုံး ရရှိခဲ့သည်။{c.rst}\n")
@@ -209,34 +228,30 @@ def find_best_key():
         divider()
 
         if copy_to_clipboard(item["key"]):
-            print(f"  {c.G}✅ ကလစ်ဘုတ်သို့ အလိုအလျောက် ကူးယူပြီးပါပြီ! ✅{c.rst}")
-            print(f"  {c.D}👉 VPN အက်ပ်ကိုဖွင့်ပြီး Paste လုပ်ရုံပါပဲ{c.rst}")
+            print(f"  {c.G}✅ ကလစ်ဘုတ်သို့ ကူးယူပြီးပါပြီ! ✅{c.rst}")
         else:
-            print(f"  {c.Y}⚠️ အပေါ်က Key ကို နှိပ်၍ ဖိထားပါ → Copy ကို ရွေးပါ{c.rst}")
+            print(f"  {c.Y}⚠️ အပေါ်က Key ကို နှိပ်ဖိထားပါ → Copy ကို ရွေးပါ{c.rst}")
         divider()
 
-        print(f"  {c.C}[F]{c.rst} အကြိုက်ဆုံးသိမ်းမည်  ", end="")
+        print(f"  {c.C}[F]{c.rst} သိမ်းမည်  ", end="")
         if current_index + 1 < len(all_keys):
             print(f"{c.C}[N]{c.rst} နောက်တစ်ခု  ", end="")
         if current_index > 0:
             print(f"{c.C}[P]{c.rst} ယခင်တစ်ခု  ", end="")
-        print(f"{c.C}[Q]{c.rst} မီနူးသို့ပြန်မည်")
+        print(f"{c.C}[Q]{c.rst} မီနူးသို့ပြန်")
 
         choice = input(f"  {c.P}▶ ရွေးချယ်ပါ : {c.rst}").strip().upper()
 
         if choice == "F":
             if save_favorite(item["name"], item["key"]):
-                print(f"  {c.G}✅ အကြိုက်ဆုံးထဲသို့ သိမ်းဆည်းပြီးပါပြီ!{c.rst}\n")
+                print(f"  {c.G}✅ သိမ်းပြီးပါပြီ!{c.rst}\n")
             else:
-                print(f"  {c.Y}⚠️ ဤ Key သည် အကြိုက်ဆုံးထဲတွင် ရှိပြီးသားဖြစ်ပါသည်။{c.rst}\n")
-            input(f"  {c.D}ဆက်ရန် Enter နှိပ်ပါ...{c.rst}")
-
+                print(f"  {c.Y}⚠️ ရှိပြီးသား{c.rst}\n")
+            input(f"  {c.D}Enter...{c.rst}")
         elif choice == "N" and current_index + 1 < len(all_keys):
             current_index += 1
-
         elif choice == "P" and current_index > 0:
             current_index -= 1
-
         elif choice == "Q":
             break
 
@@ -249,35 +264,28 @@ def favorites_menu():
         divider()
 
         if not favorites:
-            print(f"  {c.D}အကြိုက်ဆုံး မရှိသေးပါ။ Key ရရှိတဲ့အခါ [F] နှိပ်ပြီး သိမ်းဆည်းပါ။{c.rst}")
+            print(f"  {c.D}အကြိုက်ဆုံး မရှိသေးပါ။ Key ရတဲ့အခါ [F] နှိပ်ပါ။{c.rst}")
         else:
-            for index, entry in enumerate(favorites, 1):
+            for idx, entry in enumerate(favorites, 1):
                 if "|" in entry:
                     name, key = entry.split("|", 1)
-                    print(f"  {c.C}[{index}]{c.rst} {name}")
+                    print(f"  {c.C}[{idx}]{c.rst} {name}")
                     print(f"      {c.W}{key}{c.rst}")
                     if copy_to_clipboard(key):
-                        print(f"      {c.G}✅ ကူးယူပြီးပါပြီ{c.rst}")
+                        print(f"      {c.G}✅ ကူးယူပြီး{c.rst}")
                     print()
 
         divider()
-        print(f"  {c.C}[Q]{c.rst} မီနူးသို့ပြန်ရန်   {c.C}[A]{c.rst} အားလုံးဖျက်ရန်")
-
-        choice = input(f"  {c.P}▶ ရွေးချယ်ပါ : {c.rst}").strip().upper()
-
-        if choice == "Q":
+        print(f"  {c.C}[Q]{c.rst} ပြန်မည်   {c.C}[A]{c.rst} အားလုံးဖျက်မည်")
+        sel = input(f"  {c.P}▶ : {c.rst}").strip().upper()
+        if sel == "Q":
             break
-
-        elif choice == "A":
-            confirm = input(f"  {c.R}⚠️ အကြိုက်ဆုံးအားလုံးကို ဖျက်မှာ သေချာပါသလား? (y/n): {c.rst}").lower()
-            if confirm == "y":
-                try:
-                    if os.path.exists(FAV_FILE):
-                        os.remove(FAV_FILE)
-                        print(f"  {c.G}✅ အားလုံးဖျက်ပြီးပါပြီ။{c.rst}")
-                except Exception:
-                    print(f"  {c.R}❌ ဖျက်၍မရပါ။{c.rst}")
-                input(f"  {c.D}ဆက်ရန် Enter နှိပ်ပါ...{c.rst}")
+        elif sel == "A":
+            if input(f"  {c.R}ဖျက်မှာလား? y/n: {c.rst}").lower() == "y":
+                if os.path.exists(FAV_FILE):
+                    os.remove(FAV_FILE)
+                    print(f"  {c.G}✅ ဖျက်ပြီး{c.rst}")
+                input(f"  {c.D}Enter...{c.rst}")
                 break
 
 
@@ -286,29 +294,26 @@ def main_menu():
         header()
         print(f"  {c.Y}📂 ပင်မမီနူး{c.rst}")
         divider()
-        print(f"  {c.G}⭐ [0]  အကောင်းဆုံး Key ကို တစ်ခါတည်းရှာမည် — အကြံပြု{c.rst}")
+        print(f"  {c.G}⭐ [0]  အကောင်းဆုံး Key ကို ရှာမည် — အကြံပြု{c.rst}")
         print()
-        print(f"  {c.C}[1]{c.rst} Shadowmere JSON API")
-        print(f"  {c.C}[2]{c.rst} Shadowmere Base64 API")
-        print(f"  {c.C}[3]{c.rst} VLESS Config List")
+        print(f"  {c.C}[1]{c.rst} Shadowmere JSON")
+        print(f"  {c.C}[2]{c.rst} Shadowmere Base64")
+        print(f"  {c.C}[3]{c.rst} VLESS List")
         print(f"  {c.C}[4]{c.rst} ⭐ အကြိုက်ဆုံးများ")
         print()
-        print(f"  {c.R}[9]{c.rst} ပရိုဂရမ်မှ ထွက်မည်")
+        print(f"  {c.R}[9]{c.rst} ထွက်မည်")
         divider()
 
         choice = input(f"  {c.P}▶ ရွေးချယ်ပါ : {c.rst}").strip()
 
         if choice == "0":
             find_best_key()
-
         elif choice == "9":
             clear()
             print(f"\n  {c.C}👋 ကျေးဇူးပြု၍ ပြန်လာပါ။{c.rst}\n")
             sys.exit(0)
-
         elif choice == "4":
             favorites_menu()
-
         elif choice in API_LIST:
             name, url, data_type = API_LIST[choice]
             header()
@@ -323,8 +328,8 @@ def main_menu():
                 data = fetch_txt(url)
 
             if not data:
-                print(f"  {c.R}❌ ဒေတာရယူ၍မရပါ။{c.rst}")
-                input(f"  {c.D}ဆက်ရန် Enter နှိပ်ပါ...{c.rst}")
+                print(f"  {c.R}❌ ဒေတာမရပါ။{c.rst}")
+                input(f"  {c.D}Enter...{c.rst}")
                 continue
 
             header()
@@ -336,17 +341,18 @@ def main_menu():
                 for item in data:
                     if isinstance(item, dict):
                         key = item.get("url", item.get("link", ""))
-                        name = item.get("name", item.get("remarks", f"Server {len(items)+1}"))
-                        if key:
-                            items.append({"name": name, "key": key})
+                        sname = item.get("name", item.get("remarks", f"Server {len(items)+1}"))
+                        if key and (key.startswith("vless://") or key.startswith("ss://")):
+                            items.append({"name": sname, "key": key})
             elif data_type in ["b64", "txt"] and isinstance(data, list):
                 for key in data:
-                    name, full_key = parse_key_info(key)
-                    items.append({"name": name, "key": full_key})
+                    if key.startswith("vless://") or key.startswith("ss://"):
+                        sname, full_key = parse_key_info(key)
+                        items.append({"name": sname, "key": full_key})
 
             if not items:
-                print(f"  {c.Y}⚠️ မည်သည့် Key မျှမတွေ့ပါ။{c.rst}")
-                input(f"  {c.D}ဆက်ရန် Enter နှိပ်ပါ...{c.rst}")
+                print(f"  {c.R}❌ Key မတွေ့ပါ။{c.rst}")
+                input(f"  {c.D}Enter...{c.rst}")
                 continue
 
             for idx, item in enumerate(items, 1):
@@ -366,23 +372,23 @@ def main_menu():
                     header()
                     divider(f"Server #{idx+1}")
                     print(f"  {c.G}📍 နာမည်:{c.rst} {sname}")
-                    print(f"  {c.G}🔑 VPN Key (အပြည့်အဝ):{c.rst}")
+                    print(f"  {c.G}🔑 VPN Key:{c.rst}")
                     print(f"{c.W}{key}{c.rst}")
                     divider()
 
                     if copy_to_clipboard(key):
                         print(f"  {c.G}✅ ကူးယူပြီးပါပြီ!{c.rst}")
                     else:
-                        print(f"  {c.Y}⚠️ အပေါ်က Key ကို ဖိပြီး Copy ကူးပါ{c.rst}")
+                        print(f"  {c.Y}⚠️ ဖိပြီး Copy ကူးပါ{c.rst}")
                     divider()
 
                     while True:
-                        print(f"  {c.C}[F]{c.rst} သိမ်းရန်   {c.C}[Q]{c.rst} ပြန်ရန်")
+                        print(f"  {c.C}[F]{c.rst} သိမ်းမည်   {c.C}[Q]{c.rst} ပြန်မည်")
                         act = input(f"  {c.P}▶ : {c.rst}").strip().upper()
                         if act == "F":
                             if save_favorite(sname, key):
-                                print(f"  {c.G}✅ သိမ်းပြီးပါပြီ!{c.rst}")
-                            input(f"  {c.D}ဆက်ရန် Enter...{c.rst}")
+                                print(f"  {c.G}✅ သိမ်းပြီး!{c.rst}")
+                            input(f"  {c.D}Enter...{c.rst}")
                         elif act == "Q":
                             break
             except ValueError:
@@ -394,10 +400,10 @@ if __name__ == "__main__":
         main_menu()
     except KeyboardInterrupt:
         clear()
-        print(f"\n\n  {c.C}👋 ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။{c.rst}\n")
+        print(f"\n\n  {c.C}👋 ထွက်လိုက်ပါပြီ။{c.rst}\n")
         sys.exit(0)
     except Exception as e:
         clear()
-        print(f"\n  {c.R}❌ အမှားအယွင်း ဖြစ်ပွားခဲ့သည်:{c.rst}")
-        print(f"  {c.R}   {str(e)}{c.rst}\n")
-        input(f"  {c.D}ပိတ်ရန် Enter နှိပ်ပါ...{c.rst}")
+        print(f"\n  {c.R}❌ အမှား: {str(e)}{c.rst}")
+        input(f"  {c.D}Enter...{c.rst}")
+    
