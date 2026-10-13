@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import urllib.request, urllib.error, json, base64, os, sys
 
-VERSION = "2.1"
+VERSION = "2.2"
 
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
@@ -24,7 +24,7 @@ def fetch_b64(url):
         r = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(r, timeout=15) as res:
             data = res.read().decode().strip()
-            return base64.b64decode(data).decode()
+            return base64.b64decode(data).decode().splitlines()
     except Exception:
         return None
 
@@ -32,7 +32,12 @@ def fetch_txt(url):
     try:
         r = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(r, timeout=15) as res:
-            return res.read().decode().strip().splitlines()
+            content = res.read().decode().strip()
+            try:
+                decoded = base64.b64decode(content).decode('utf-8')
+                return [line.strip() for line in decoded.splitlines() if line.strip() and not line.startswith('#')]
+            except:
+                return [line.strip() for line in content.splitlines() if line.strip() and not line.startswith('#')]
     except Exception:
         return None
 
@@ -135,8 +140,7 @@ def country_menu(data, api_type):
                     print(f"\n  {idx}. {name}")
                     print(f"     {key}")
                 else:
-                    print(f"\n  {idx}. {item[:60]}...")
-                    print(f"     {item}")
+                    print(f"\n  {idx}. {item}")
         
         print("\n" + "─" * 55)
         input("  မီနူးသို့ပြန်ရန် Enter...")
@@ -151,8 +155,7 @@ def main():
         if dtype == "json":
             data = fetch_json(url)
         elif dtype == "b64":
-            raw = fetch_b64(url)
-            data = raw.splitlines() if raw else None
+            data = fetch_b64(url)
         elif dtype == "txt":
             data = fetch_txt(url)
         
@@ -171,4 +174,4 @@ if __name__ == "__main__":
         clear()
         print("\n\n  ✅ ထွက်လိုက်ပါပြီ။")
         sys.exit(0)
-        
+                
