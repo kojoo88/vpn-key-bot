@@ -6,9 +6,8 @@ import base64
 import os
 import socket
 import time
-from datetime import datetime
 
-VERSION = "PREMIUM 1.1 ⚡"
+VERSION = "PREMIUM 1.2 ⚡"
 
 class Theme:
     PRI = "\033[38;5;117m"
@@ -31,10 +30,10 @@ def logo():
     print(f"{Theme.PRI}{'╚'+'═'*58+'╝'}{Theme.RES}")
     print()
 
+# Shadowmere နှစ်ခုသာ သုံးမည် — GitHub က ဖယ်လိုက်ပြီ
 SOURCES = [
     {"name": "Shadowmere JSON",   "url": "https://shadowmere.xyz/api/sub/",        "type": "json"},
     {"name": "Shadowmere Base64", "url": "https://shadowmere.xyz/api/b64sub/",     "type": "b64"},
-    {"name": "GitHub VLESS List",  "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt", "type": "txt"}
 ]
 
 def fetch_url(source):
@@ -43,7 +42,7 @@ def fetch_url(source):
             source["url"],
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         )
-        with urllib.request.urlopen(req, timeout=25) as res:
+        with urllib.request.urlopen(req, timeout=10) as res:  # အချိန်ကန့်သတ် ၁၀ စက္ကန့်
             return res.read().decode("utf-8", errors="ignore")
     except:
         return None
@@ -77,18 +76,6 @@ def parse_keys(text, source_type):
                             name = line.split("#")[-1][:40]
                     keys.append({"name": name, "key": line})
         except: pass
-    elif source_type == "txt":
-        for line in text.splitlines():
-            line = line.strip()
-            if line and ("vless://" in line or "ss://" in line or "vmess://" in line):
-                name = "Server"
-                if "#" in line:
-                    try:
-                        from urllib.parse import unquote
-                        name = unquote(line.split("#")[-1])
-                    except:
-                        name = line.split("#")[-1][:40]
-                keys.append({"name": name, "key": line})
     return keys
 
 def load_sources():
@@ -108,9 +95,9 @@ def load_sources():
                         all_keys.append(k)
                 print(f"{Theme.SUC}✅ +{len(keys)} keys  |  Total: {len(all_keys)}{Theme.RES}")
             else:
-                print(f"{Theme.WAR}⚠️ အကြောင်းအရာမတွေ့{Theme.RES}")
+                print(f"{Theme.WAR}⚠️ ကီးမတွေ့{Theme.RES}")
         else:
-            print(f"{Theme.ERR}❌ ချိတ်ဆက်မှုမအောင်မြင်{Theme.RES}")
+            print(f"{Theme.ERR}❌ အချိန်ကုန်သွား{Theme.RES}")
     print(f"\n{Theme.SUC}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Theme.RES}")
     print(f"{Theme.SUC}✅ စုစုပေါင်း ကီး {len(all_keys)} ခု အဆင်သင့်ဖြစ်နေပါပြီ{Theme.RES}")
     return all_keys
@@ -123,7 +110,7 @@ def extract_host(key):
     except:
         return "", 443
 
-def ping_test(host, port=443, timeout=0.55):
+def ping_test(host, port=443, timeout=0.5):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(timeout)
@@ -190,7 +177,7 @@ def scan_all(keys):
     logo()
     print(f"{Theme.INF}📊 ဆာဗာအားလုံးကို စမ်းသပ်နေသည်...{Theme.RES}\n")
     results = []
-    total = min(len(keys), 25)
+    total = min(len(keys), 20)
     for i in range(total):
         item = keys[i]
         host, port = extract_host(item["key"])
@@ -272,8 +259,7 @@ def main_menu():
         
         if choice == "1":
             best = show_top(results, 1)
-            if best:
-                show_best(best, len(results), len(keys), results)
+            if best: show_best(best, len(results), len(keys), results)
             input(f"\n{Theme.INF}ပြန်ရန် Enter နှိပ်ပါ...{Theme.RES}")
         elif choice == "2":
             show_top(results, 10)
@@ -283,8 +269,7 @@ def main_menu():
             input(f"\n{Theme.INF}ပြန်ရန် Enter နှိပ်ပါ...{Theme.RES}")
         elif choice == "4":
             keys = load_sources()
-            if keys:
-                results = scan_all(keys)
+            if keys: results = scan_all(keys)
         elif choice == "0":
             print(f"\n{Theme.SUC}👋 ကောင်းသောနေ့လည်ခင်းဖြစ်ပါစေ!{Theme.RES}")
             break
@@ -300,4 +285,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n{Theme.ERR}အမှားအယွင်း: {str(e)}{Theme.RES}")
         input(f"ဆက်ရန် Enter နှိပ်ပါ...")
-    
+                            
