@@ -8,7 +8,7 @@ import socket
 import time
 from datetime import datetime
 
-VERSION = "5.4 ⚡ FAST"
+VERSION = "5.5 ⚡ FULL"
 FAV_FILE = os.path.join(os.path.expanduser("~"), "vpn-key-bot", "favorites.txt")
 
 class Colors:
@@ -28,9 +28,9 @@ def clear():
 
 def header():
     clear()
-    print(f"{C.CYAN}{'='*42}{C.RESET}")
-    print(f"{C.CYAN}⚡ VPN Key Finder — {VERSION}{C.RESET}")
-    print(f"{C.CYAN}{'='*42}{C.RESET}")
+    print(f"{C.CYAN}{'='*50}{C.RESET}")
+    print(f"{C.CYAN}⚡ VPN KEY GENERATOR  —  {VERSION}{C.RESET}")
+    print(f"{C.CYAN}{'='*50}{C.RESET}")
     print()
 
 def get_flag(name):
@@ -78,15 +78,15 @@ def get_keys():
                         break
                 keys.append({"name": name, "key": key, "priority": priority})
     keys.sort(key=lambda x: x["priority"])
-    return keys[:15]
+    return keys
 
 def extract_host(key):
     try:
         if "://" in key:
             from urllib.parse import urlparse
-            return urlparse(key).hostname or ""
+            return urlparse(key).hostname or "", urlparse(key).port or 443
     except:
-        return ""
+        return "", 443
 
 def copy_to_clipboard(text):
     try:
@@ -95,6 +95,37 @@ def copy_to_clipboard(text):
         return True
     except:
         return False
+
+def save_favorite(item):
+    try:
+        os.makedirs(os.path.dirname(FAV_FILE), exist_ok=True)
+        with open(FAV_FILE, "a", encoding="utf-8") as f:
+            f.write(f"{item['name']}|{item['key']}|{datetime.now().strftime('%H:%M:%S')}\n")
+        return True
+    except:
+        return False
+
+def show_key(item, ms=0):
+    print(f"{C.GREEN}{'-'*50}{C.RESET}")
+    print(f"  {get_flag(item['name'])} {item['name']}")
+    if ms > 0:
+        status = f"{C.GREEN}{ms}ms{C.RESET}" if ms < 200 else f"{C.YELLOW}{ms}ms{C.RESET}" if ms < 400 else f"{C.RED}{ms}ms{C.RESET}"
+        print(f"  📶 Ping: {status}")
+    print(f"  🔑 KEY:")
+    print(f"  {C.WHITE}{item['key']}{C.RESET}")
+    print(f"{C.GREEN}{'-'*50}{C.RESET}")
+    
+    print(f"  {C.CYAN}[1]{C.RESET} Copy Key    {C.CYAN}[2]{C.RESET} Save to Favorites    {C.CYAN}[Q]{C.RESET} Back")
+    sel = input("  Choose: ").strip().upper()
+    if sel == "1":
+        if copy_to_clipboard(item["key"]):
+            print(f"  {C.GREEN}✅ Copied!{C.RESET}")
+        else:
+            print(f"  ⚠️ Copy manually: {item['key']}")
+    elif sel == "2":
+        if save_favorite(item):
+            print(f"  {C.GREEN}✅ Saved!{C.RESET}")
+    input("  Press Enter...")
 
 def find_best():
     header()
@@ -105,19 +136,19 @@ def find_best():
     keys = get_keys()
     if not keys:
         print(f"  {C.RED}❌ No keys found!{C.RESET}")
-        input("  Press Enter to exit...")
+        input("  Enter to go back...")
         return
     
     best_ms = 9999
     best_server = None
     
-    for i, item in enumerate(keys, 1):
-        host = extract_host(item["key"])
+    for i, item in enumerate(keys[:15], 1):
+        host, port = extract_host(item["key"])
         if not host:
             continue
-        ms = ping_test(host)
-        display = f"{C.GREEN}{ms}ms{C.RESET}" if ms < 200 else f"{C.RED}{ms}ms{C.RESET}"
-        print(f"  {get_flag(item['name'])} {i}. {item['name'][:25]:<28} → {display}")
+        ms = ping_test(host, port)
+        status = f"{C.GREEN}{ms}ms{C.RESET}" if ms < 200 else f"{C.RED}{ms}ms{C.RESET}"
+        print(f"  {get_flag(item['name'])} {i}. {item['name'][:25]:<28} → {status}")
         
         if ms < best_ms:
             best_ms = ms
@@ -127,36 +158,131 @@ def find_best():
     
     if not best_server:
         print(f"\n  {C.RED}❌ No server responded{C.RESET}")
+        input("  Enter to go back...")
         return
     
-    now = datetime.now().strftime("%H:%M:%S")
     print()
-    print(f"{C.GREEN}{'='*42}{C.RESET}")
-    print(f"{C.GREEN} ✅ BEST: {get_flag(best_server['name'])} {best_server['name']}{C.RESET}")
-    print(f" 📶 Ping: {C.GREEN}{best_ms}ms{C.RESET}  🕐 Time: {now}")
-    print(f"{C.GREEN}{'='*42}{C.RESET}")
-    print()
-    print(f"  🔑 KEY:")
-    print(f"  {C.WHITE}{best_server['key']}{C.RESET}")
+    show_key(best_server, best_ms)
+
+def find_fastest():
+    header()
+    print("  🏆 Finding fastest server...")
     print()
     
-    if copy_to_clipboard(best_server["key"]):
-        print(f"  {C.GREEN}✅ Copied to clipboard!{C.RESET}")
+    keys = get_keys()
+    if not keys:
+        print(f"  {C.RED}❌ No keys found!{C.RESET}")
+        input("  Enter to go back...")
+        return
+    
+    fastest_ms = 9999
+    fastest_server = None
+    
+    for i, item in enumerate(keys[:20], 1):
+        host, port = extract_host(item["key"])
+        if not host:
+            continue
+        ms = ping_test(host, port)
+        print(f"  {get_flag(item['name'])} {i}. {item['name'][:25]:<28} → {f'{C.GREEN}{ms}ms ← NEW BEST!{C.RESET}' if ms < fastest_ms else f'{ms}ms'}")
+        if ms < fastest_ms:
+            fastest_ms = ms
+            fastest_server = item
+    
+    if not fastest_server:
+        print(f"\n  {C.RED}❌ No server responded{C.RESET}")
+        input("  Enter to go back...")
+        return
+    
+    print()
+    show_key(fastest_server, fastest_ms)
+
+def browse_all():
+    header()
+    print("  📋 Loading all servers...")
+    print()
+    
+    keys = get_keys()
+    if not keys:
+        print(f"  {C.RED}❌ No keys found!{C.RESET}")
+        input("  Enter to go back...")
+        return
+    
+    idx = 0
+    while True:
+        item = keys[idx]
+        host, port = extract_host(item["key"])
+        ms = ping_test(host, port) if host else 9999
+        
+        header()
+        print(f"  📋 Server {idx+1}/{len(keys)}")
+        print(f"  {get_flag(item['name'])} {item['name']}")
+        if ms < 9999:
+            status = f"{C.GREEN}{ms}ms{C.RESET}" if ms < 200 else f"{C.YELLOW}{ms}ms{C.RESET}" if ms < 400 else f"{C.RED}{ms}ms{C.RESET}"
+            print(f"  📶 Ping: {status}")
+        print(f"  🔑 KEY:\n  {C.WHITE}{item['key']}{C.RESET}")
+        print()
+        print(f"  {C.CYAN}[←] Previous    {C.CYAN}[→] Next    {C.CYAN}[1]{C.RESET} Copy    {C.CYAN}[2]{C.RESET} Save    {C.CYAN}[Q]{C.RESET} Back")
+        
+        sel = input("  Choose: ").strip().upper()
+        if sel == "Q":
+            break
+        elif sel == "1":
+            copy_to_clipboard(item["key"])
+            print(f"  {C.GREEN}✅ Copied!{C.RESET}")
+            time.sleep(0.8)
+        elif sel == "2":
+            save_favorite(item)
+            print(f"  {C.GREEN}✅ Saved!{C.RESET}")
+            time.sleep(0.8)
+        elif sel == "" or sel == "→":
+            idx = (idx + 1) % len(keys)
+        elif sel == "←":
+            idx = (idx - 1) % len(keys)
+
+def show_favorites():
+    header()
+    print("  ⭐ Your Favorites")
+    print()
+    
+    if not os.path.exists(FAV_FILE):
+        print(f"  {C.YELLOW}No favorites saved yet.{C.RESET}")
     else:
-        print(f"  ⚠️ Copy the key above manually")
-    
-    input("\n  Press Enter to exit...")
+        with open(FAV_FILE, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        if not lines:
+            print(f"  {C.YELLOW}No favorites saved yet.{C.RESET}")
+        else:
+            for i, line in enumerate(lines, 1):
+                parts = line.strip().split("|", 2)
+                name = parts[0] if len(parts) > 0 else "Server"
+                key = parts[1] if len(parts) > 1 else ""
+                t = parts[2] if len(parts) > 2 else ""
+                print(f"  {C.CYAN}[{i}]{C.RESET} {get_flag(name)} {name}")
+                if t:
+                    print(f"     🕐 {t}")
+                print(f"     🔑 {key[:40]}...")
+                print()
+    input("  Enter to go back...")
 
 def main_menu():
     while True:
         header()
-        print("  ⚡ [F] Find Best Server")
+        print("  ⚡ [F] Find Best Server — Auto match")
+        print("  🏆 [0] Fastest Server Only")
+        print("  📋 [B] Browse All Servers")
+        print("  ⭐ [4] My Favorites")
         print("  🚪 [X] Exit")
         print()
-        choice = input("  Choose: ").strip().upper()
-        if choice == "F":
+        sel = input("  Choose: ").strip().upper()
+        if sel == "F":
             find_best()
-        elif choice == "X":
+        elif sel == "0":
+            find_fastest()
+        elif sel == "B":
+            browse_all()
+        elif sel == "4":
+            show_favorites()
+        elif sel == "X":
             print("  👋 Goodbye!")
             break
 
