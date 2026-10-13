@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import urllib.request, urllib.error, json, base64, os, sys
+import urllib.request, urllib.error, json, base64, os, sys, socket, time
 
-VERSION = "2.2"
+VERSION = "2.3"
 
 API_LIST = {
     "1": ("Shadowmere JSON", "https://shadowmere.xyz/api/sub/", "json"),
@@ -10,6 +10,23 @@ API_LIST = {
 }
 
 def clear(): os.system("clear")
+
+def test_ping(host, port, timeout=2):
+    try:
+        if not host:
+            return "⚠️ စမ်းသပ်၍မရ"
+        start = time.time()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, int(port)))
+        sock.close()
+        ms = round((time.time() - start) * 1000)
+        if result == 0:
+            return f"✅ အလုပ်လုပ်နေ  {ms}ms"
+        else:
+            return "❌ မရနိုင်ပါ"
+    except Exception:
+        return "⚠️ စမ်းသပ်၍မရ"
 
 def fetch_json(url):
     try:
@@ -49,11 +66,35 @@ def make_ss_key(s):
     except:
         return "❌ အမှား"
 
+def extract_host_port(link):
+    try:
+        if link.startswith("ss://"):
+            part = link.split("@")[1].split("#")[0]
+            host, port = part.split(":")
+            return host, int(port)
+        elif "://" in link:
+            after = link.split("//")[1]
+            if "@" in after:
+                after = after.split("@")[1]
+            if ":" in after and "?" in after:
+                host = after.split(":")[0]
+                port = after.split(":")[1].split("?")[0]
+                return host, int(port)
+            elif ":" in after:
+                host, port = after.split(":")
+                return host, int(port.split("/")[0])
+            else:
+                return after.split("/")[0], 443
+    except:
+        return None, None
+    return None, None
+
 def header():
     clear()
-    print("─" * 50)
+    print("─" * 55)
     print(f"     🔑 VPN KEY TOOL  v{VERSION}")
-    print("─" * 50)
+    print("      တကယ်အလုပ်လုပ်သည်များကိုသာ ပြပါမည်")
+    print("─" * 55)
     print()
 
 def api_menu():
@@ -127,22 +168,32 @@ def country_menu(data, api_type):
         clear()
         title = {v:k for k,v in filters.items()}.get(kw, "အားလုံး")
         print("─" * 55)
-        print(f"  📌 {title}  —  စုစုပေါင်း {len(results)} လုံး")
+        print(f"  📌 {title}  —  စစ်ဆေးနေသည်... စောင့်ပါ")
         print("─" * 55)
         
-        if not results:
-            print("  ❌ ဤနိုင်ငံအတွက် မတွေ့ပါ")
-        else:
-            for idx, item in enumerate(results, 1):
-                if api_type == "json":
-                    name = item.get("remarks", f"Server {idx}")
-                    key = make_ss_key(item)
-                    print(f"\n  {idx}. {name}")
-                    print(f"     {key}")
-                else:
-                    print(f"\n  {idx}. {item}")
+        working = []
+        for idx, item in enumerate(results, 1):
+            if api_type == "json":
+                host = item.get("server", "")
+                port = item.get("server_port", 0)
+                name = item.get("remarks", f"Server {idx}")
+                key = make_ss_key(item)
+            else:
+                key = item
+                host, port = extract_host_port(item)
+                name = f"Server {idx}"
+            
+            status = test_ping(host, port) if host else "⚠️ စမ်းသပ်၍မရ"
+            
+            if "✅" in status:
+                working.append((idx, name, key, status))
+                print(f"\n  🟢 {name}")
+                print(f"     {status}")
+                print(f"     {key}")
         
         print("\n" + "─" * 55)
+        print(f"  ✅ စုစုပေါင်း: {len(working)} / {len(results)} လုံး အလုပ်လုပ်နေသည်")
+        print("─" * 55)
         input("  မီနူးသို့ပြန်ရန် Enter...")
 
 def main():
@@ -160,7 +211,7 @@ def main():
             data = fetch_txt(url)
         
         if not data:
-            input("  ❌ ဒေတာရယူ၍မရပါ။ လင့်ခ်သေခြင်း သို့မဟုတ် အင်တာနက်ပြဿနာဖြစ်နိုင်ပါသည်။ Enter...")
+            input("  ❌ ဒေတာရယူ၍မရပါ။ လင့်ခ်သေခြင်း သို့မဟုတ် အင်တာနက်ပြဿနာ။ Enter...")
             continue
         
         while True:
@@ -174,4 +225,4 @@ if __name__ == "__main__":
         clear()
         print("\n\n  ✅ ထွက်လိုက်ပါပြီ။")
         sys.exit(0)
-                
+            
