@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# VPN Key Generator — Premium Edition v5.1
+# VPN Key Generator — Premium Edition v5.2
 import urllib.request
 import urllib.error
 import json
@@ -8,9 +8,10 @@ import os
 import sys
 import socket
 import time
+from datetime import datetime
 
 os.environ["TERM"] = "xterm-256color"
-VERSION = "5.1 ✨ PREMIUM"
+VERSION = "5.2 ✨ PREMIUM"
 FAV_FILE = os.path.expanduser("~/.vpn_favorites.txt")
 
 class Colors:
@@ -35,10 +36,11 @@ C = Colors()
 def header():
     clear()
     fav_count = len(load_favorites())
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"{C.P}╔══════════════════════════════════════════════════╗{C.rst}")
     print(f"{C.P}║{C.rst}{C.Y}  ✨ VPN KEY GENERATOR PREMIUM v{VERSION.split()[1]} ✨{C.rst}{C.P}║{C.rst}")
     print(f"{C.P}╠══════════════════════════════════════════════════╣{C.rst}")
-    print(f"{C.P}║{C.rst}  {C.C}📡 Status:{C.rst} Online ✅  |  {C.C}⭐ Favorites:{C.rst} {fav_count}{C.P}║{C.rst}")
+    print(f"{C.P}║{C.rst}  {C.C}📡 Status:{C.rst} Online ✅  |  {C.C}⭐ Favorites:{C.rst} {fav_count}  {C.D}{now}{C.rst}{C.P}║{C.rst}")
     print(f"{C.P}╚══════════════════════════════════════════════════╝{C.rst}\n")
 
 def divider(title=""):
@@ -51,9 +53,9 @@ def load_favorites():
             return [line.strip() for line in f if line.strip()]
     except: return []
 
-def save_favorite(name, key, ping=""):
+def save_favorite(name, key, ping="", uptime=""):
     favs = load_favorites()
-    entry = f"{name}|{key}|{ping}"
+    entry = f"{name}|{key}|{ping}|{uptime}"
     if entry not in favs:
         try:
             with open(FAV_FILE,"w",encoding="utf-8") as f:
@@ -67,6 +69,19 @@ def copy_to_clipboard(text):
         with open("/dev/clipboard","w") as f: f.write(text)
         return True
     except: return False
+
+def get_uptime_percent(ping_ms):
+    """Ping ပေါ်မူတည်ပြီး အွန်လိုင်းရာခိုင်နှုန်း တွက်ပေးတယ်"""
+    if ping_ms < 100:
+        return 100, f"{C.G}⚡ 100%{C.rst}"
+    elif ping_ms < 150:
+        return 90, f"{C.G}⚡ 90%{C.rst}"
+    elif ping_ms < 200:
+        return 75, f"{C.Y}⚡ 75%{C.rst}"
+    elif ping_ms < 300:
+        return 50, f"{C.Y}⚡ 50%{C.rst}"
+    else:
+        return 25, f"{C.R}⚡ 25%{C.rst}"
 
 def test_ping(host, port=443, timeout=2):
     try:
@@ -101,10 +116,46 @@ def extract_host_port(key):
     except: pass
     return "", ""
 
-def build_share_text(name, key, ping_info=""):
+def get_flag_emoji(name):
+    """နိုင်ငံနာမည်ကို အလံပြောင်းပေးတယ်"""
+    name = name.lower()
+    flags = {
+        "singapore": "🇸🇬",
+        "malaysia": "🇲🇾",
+        "germany": "🇩🇪",
+        "finland": "🇫🇮",
+        "japan": "🇯🇵",
+        "korea": "🇰🇷",
+        "usa": "🇺🇸",
+        "united states": "🇺🇸",
+        "uk": "🇬🇧",
+        "united kingdom": "🇬🇧",
+        "india": "🇮🇳",
+        "hongkong": "🇭🇰",
+        "hong kong": "🇭🇰",
+        "russia": "🇷🇺",
+        "netherlands": "🇳🇱",
+        "france": "🇫🇷",
+        "thailand": "🇹🇭",
+        "vietnam": "🇻🇳",
+        "philippines": "🇵🇭",
+        "indonesia": "🇮🇩",
+        "australia": "🇦🇺",
+        "canada": "🇨🇦",
+        "brazil": "🇧🇷"
+    }
+    for k, v in flags.items():
+        if k in name: return v
+    return "🌐"
+
+def build_share_text(name, key, ping_info="", uptime_pct="", fetched_time=""):
     ping_clean = ping_info.replace(C.G,"").replace(C.Y,"").replace(C.R,"").replace(C.rst,"")
-    return f"""🌐 VPN Server — {name}
+    uptime_clean = uptime_pct.replace(C.G,"").replace(C.Y,"").replace(C.R,"").replace(C.rst,"")
+    flag = get_flag_emoji(name)
+    return f"""{flag} VPN Server — {name}
+⚡ အခြေအနေ: {uptime_clean}
 📶 Ping: {ping_clean}
+🕒 ရယူချိန်: {fetched_time}
 
 🔑 Key:
 {key}
@@ -183,15 +234,21 @@ def get_all_keys():
     return all_keys
 
 def show_key_detail(item, ping_ms, ping_str):
+    fetched_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    uptime_pct_val, uptime_pct_str = get_uptime_percent(ping_ms)
+    flag = get_flag_emoji(item['name'])
+    
     while True:
         header()
-        divider(f"📡 {item['name']}")
+        divider(f"{flag} {item['name']}")
         print(f"  {C.C}📍 အရင်းအမြစ်:{C.rst} {item['source']}")
+        print(f"  {C.Y}⚡ အခြေအနေ:{C.rst} {uptime_pct_str}")
         print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
+        print(f"  {C.D}🕒 ရယူချိန်:{C.rst} {fetched_time}")
         divider()
         print(f"  {C.G}🔑 Key:{C.rst}\n{C.W}{item['key']}{C.rst}")
         divider()
-        share_text = build_share_text(item['name'], item['key'], ping_str)
+        share_text = build_share_text(item['name'], item['key'], ping_str, uptime_pct_str, fetched_time)
         print(f"\n  {C.C}[1]{C.rst} Key ကူးယူပါ")
         print(f"  {C.C}[2]{C.rst} Share ဖို့ အကုန်ကူးယူပါ")
         print(f"  {C.C}[F]{C.rst} အကြိုက်ဆုံးထဲသိမ်းပါ")
@@ -204,7 +261,7 @@ def show_key_detail(item, ping_ms, ping_str):
             copy_to_clipboard(share_text)
             print(f"  {C.G}✅ Share အကုန်ကူးယူပြီးပါပြီ! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}\n"); input("  Enter...")
         elif sel=="F":
-            save_favorite(item['name'], item['key'], ping_str)
+            save_favorite(item['name'], item['key'], ping_str, fetched_time)
             print(f"  {C.G}✅ အကြိုက်ဆုံးထဲ သိမ်းပြီးပါပြီ{C.rst}\n"); input("  Enter...")
         elif sel=="Q":
             break
@@ -225,7 +282,8 @@ def find_best_key():
     for i, item in enumerate(all_keys, 1):
         host, port = extract_host_port(item['key'])
         if not host: continue
-        sys.stdout.write(f"  🔄 {i}/{len(all_keys)} — {item['name'][:20]}...")
+        flag = get_flag_emoji(item['name'])
+        sys.stdout.write(f"  {flag} {i}/{len(all_keys)} — {item['name'][:20]}...")
         sys.stdout.flush()
         ping_ms, ping_str = test_ping(host, port, timeout=1.5)
         if ping_ms < best_ping:
@@ -233,7 +291,8 @@ def find_best_key():
             best_key = item.copy()
             best_key["ping_ms"] = ping_ms
             best_key["ping_str"] = ping_str
-            sys.stdout.write(f"  {C.G}✅ အသစ်အကောင်းဆုံး! {ping_str}{C.rst}\n")
+            _, uptime_str = get_uptime_percent(ping_ms)
+            sys.stdout.write(f"  {C.G}✅ အသစ်အကောင်းဆုံး! {uptime_str}  {ping_str}{C.rst}\n")
         else:
             sys.stdout.write(f"  {ping_str}\n")
     
@@ -278,19 +337,23 @@ def find_browse_keys():
     idx=0
     while True:
         item=all_keys[idx]
+        fetched_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        flag = get_flag_emoji(item['name'])
         header()
-        divider(f"Key #{idx+1}/{len(all_keys)}")
+        divider(f"{flag} Key #{idx+1}/{len(all_keys)}")
         host, port = extract_host_port(item['key'])
-        ping_info = f"{C.D}⏳ စမ်းနေသည်...{C.rst}"
         print(f"  {C.G}နာမည်:{C.rst} {item['name']}")
         print(f"  {C.C}အရင်းအမြစ်:{C.rst} {item['source']}")
-        print(f"  {C.Y}📶 Ping:{C.rst} {ping_info}", end="\r", flush=True)
+        print(f"  {C.Y}📶 Ping:{C.rst} {C.D}⏳ စမ်းနေသည်...{C.rst}", end="\r", flush=True)
         ping_ms, ping_str = test_ping(host, port) if host else (0, f"{C.D}မရနိုင်ပါ{C.rst}")
-        print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}    ")
+        _, uptime_str = get_uptime_percent(ping_ms)
+        print(f"  {C.Y}⚡ အခြေအနေ:{C.rst} {uptime_str}    ")
+        print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
+        print(f"  {C.D}🕒 ရယူချိန်:{C.rst} {fetched_time}")
         divider()
         print(f"  {C.Y}🔑 Key:{C.rst}\n{C.W}{item['key']}{C.rst}")
         divider()
-        share_text = build_share_text(item['name'], item['key'], ping_str)
+        share_text = build_share_text(item['name'], item['key'], ping_str, uptime_str, fetched_time)
         print(f"\n  {C.C}[1]{C.rst} Key ကူး   {C.C}[2]{C.rst} Share ကူး   {C.C}[F]{C.rst}သိမ်း")
         print(f"  {C.C}[←]ယခင်  {C.C}[→]နောက်  {C.C}[Q]{C.rst}ပြန်")
         sel = input("  ▶ : ").strip().upper()
@@ -301,7 +364,7 @@ def find_browse_keys():
             copy_to_clipboard(share_text)
             print(f"  {C.G}✅ Share အကုန်ကူးယူပြီး! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}\n"); input("  Enter...")
         elif sel=="F":
-            save_favorite(item['name'], item['key'], ping_str)
+            save_favorite(item['name'], item['key'], ping_str, fetched_time)
             print(f"  {C.G}✅ သိမ်းပြီး{C.rst}\n"); input("  Enter...")
         elif sel=="B" or sel=="P" or sel=="":
             if idx>0: idx-=1
@@ -320,13 +383,17 @@ def favorites_menu():
             print(f"  {C.D}မရှိသေးပါ။ Key ရတဲ့အခါ [F] နှိပ်ပါ။{C.rst}")
         else:
             for i,e in enumerate(favs,1):
-                parts = e.split("|",2)
+                parts = e.split("|",3)
                 n = parts[0] if len(parts)>0 else "Server"
                 k = parts[1] if len(parts)>1 else ""
                 p = parts[2] if len(parts)>2 else ""
-                print(f"  {C.C}[{i}]{C.rst} {n}  {p}")
+                t = parts[3] if len(parts)>3 else ""
+                flag = get_flag_emoji(n)
+                print(f"  {C.C}[{i}]{C.rst} {flag} {n}")
+                if p: print(f"      📶 {p}")
+                if t: print(f"      🕒 {t}")
                 print(f"      {C.W}{k}{C.rst}")
-                share_text = build_share_text(n, k, p)
+                share_text = build_share_text(n, k, p, "", t)
                 print(f"      {C.C}[1]Key ကူး  [2]Share ကူး{C.rst}")
                 act = input(f"      ▶ : ").strip()
                 if act=="1":
@@ -377,19 +444,23 @@ def main_menu():
                     n,vk=parse_key_info(k)
                     if vk: items.append({"name":n,"key":vk})
             if not items: input(f"  {C.R}Key မတွေ့ပါ။ အခြားရွေးပါ။ Enter...{C.rst}"); continue
-            for i,x in enumerate(items,1): print(f"  {C.C}[{i}]{C.rst} {x['name']}")
+            for i,x in enumerate(items,1): print(f"  {C.C}[{i}]{C.rst} {get_flag_emoji(x['name'])} {x['name']}")
             sel=input(f"\n  ▶ နံပါတ်ရွေးပါ [Q]ပြန် : ").strip().upper()
             if sel=="Q": continue
             try:
                 idx=int(sel)-1
                 if 0<=idx<len(items):
-                    it=items[idx]; header(); divider(it['name'])
+                    it=items[idx]; header(); divider(get_flag_emoji(it['name'])+" "+it['name'])
+                    fetched_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     host, port = extract_host_port(it['key'])
                     ping_ms, ping_str = test_ping(host, port) if host else (0, f"{C.D}မရနိုင်ပါ{C.rst}")
+                    _, uptime_str = get_uptime_percent(ping_ms)
+                    print(f"  {C.Y}⚡ အခြေအနေ:{C.rst} {uptime_str}")
                     print(f"  {C.Y}📶 Ping:{C.rst} {ping_str}")
+                    print(f"  {C.D}🕒 ရယူချိန်:{C.rst} {fetched_time}")
                     print(f"  {C.G}🔑 Key:{C.rst}\n{C.W}{it['key']}{C.rst}")
                     divider()
-                    share_text = build_share_text(it['name'], it['key'], ping_str)
+                    share_text = build_share_text(it['name'], it['key'], ping_str, uptime_str, fetched_time)
                     while True:
                         print(f"\n  {C.C}[1]{C.rst}Key ကူး   {C.C}[2]{C.rst}Share ကူး   {C.C}[F]{C.rst}သိမ်း   {C.C}[Q]{C.rst}ပြန်")
                         a=input("  ▶ : ").strip().upper()
@@ -400,7 +471,7 @@ def main_menu():
                             copy_to_clipboard(share_text)
                             print(f"  {C.G}✅ Share အကုန်ကူးယူပြီး! Telegram/Facebook/TikTok မှာ Paste လုပ်ပါ{C.rst}")
                         elif a=="F":
-                            save_favorite(it['name'], it['key'], ping_str)
+                            save_favorite(it['name'], it['key'], ping_str, fetched_time)
                             print(f"  {C.G}✅ သိမ်းပြီး{C.rst}")
                         elif a=="Q":
                             break
