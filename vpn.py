@@ -8,12 +8,11 @@ import socket
 import time
 from datetime import datetime
 
-VERSION = "PREMIUM 1.0 ⚡"
+VERSION = "PREMIUM 1.1 ⚡"
 
 class Theme:
     PRI = "\033[38;5;117m"
     SEC = "\033[38;5;245m"
-    ACC = "\033[38;5;149m"
     SUC = "\033[38;5;114m"
     INF = "\033[38;5;81m"
     WAR = "\033[38;5;221m"
@@ -27,8 +26,8 @@ def clear(): os.system("clear")
 def logo():
     clear()
     print(f"{Theme.PRI}{'╔'+'═'*58+'╗'}{Theme.RES}")
-    print(f"{Theme.PRI}║{Theme.RES}{Theme.BRI}{' '*15}⚡ VPN KEY FINDER PREMIUM ⚡{' '*15}{Theme.RES}{Theme.PRI}║{Theme.RES}")
-    print(f"{Theme.PRI}║{Theme.RES}{Theme.SEC}{' '*22}Version {VERSION}{' '*22}{Theme.RES}{Theme.PRI}║{Theme.RES}")
+    print(f"{Theme.PRI}║{Theme.RES}{Theme.BRI}{' '*12}⚡ VPN KEY FINDER PREMIUM ⚡{' '*12}{Theme.RES}{Theme.PRI}║{Theme.RES}")
+    print(f"{Theme.PRI}║{Theme.RES}{Theme.SEC}{' '*20}Version {VERSION}{' '*20}{Theme.RES}{Theme.PRI}║{Theme.RES}")
     print(f"{Theme.PRI}{'╚'+'═'*58+'╝'}{Theme.RES}")
     print()
 
@@ -183,7 +182,7 @@ def get_flag(name):
     elif "indonesia" in n or "id" in n: fl = "🇮🇩"
     elif "canada" in n: fl = "🇨🇦"
     elif "germany" in n or "de" in n: fl = "🇩🇪"
-    elif "united kingdom" in n or "uk" in n or "gb" in n: fl = "🇬🇧"
+    elif "uk" in n or "gb" in n: fl = "🇬🇧"
     elif "france" in n or "fr" in n: fl = "🇫🇷"
     return fl
 
@@ -205,11 +204,12 @@ def scan_all(keys):
 def show_top(results, count=10):
     logo()
     print(f"{Theme.BLD}{Theme.INF}🏆 အမြန်ဆုံး ဆာဗာများ (Top {count}){Theme.RES}\n")
-    print(f"  {'#':<4} {'တည်းချက်':<5} {'Ping':<16} {'တည်နေရာ/အမည်'}")
-    print(f"  {'─'*60}")
+    print(f"  {'#':<4} {'Ping':<16} {'ဆာဗာအမည်'}")
+    print(f"  {'─'*55}")
     display = [r for r in results if r["ms"] < 9999][:count]
     if not display:
         print(f"  {Theme.WAR}မည်သည့်ဆာဗာမျှ မတုံ့ပြန်ပါ{Theme.RES}")
+        input(f"\n{Theme.INF}ပြန်ရန် Enter နှိပ်ပါ...{Theme.RES}")
         return None
     for idx, r in enumerate(display, 1):
         flag = get_flag(r["name"])
@@ -239,51 +239,65 @@ def show_best(best, total_tested, total_keys, results):
         print(f"{Theme.SUC}✅ ကီးကို ကလစ်ဘုတ်သို့ ကူးယူပြီးပါပြီ!{Theme.RES}")
     else:
         print(f"{Theme.WAR}⚠️ အထက်ကကီးကို ကိုယ်တိုင်ကူးယူပါ{Theme.RES}")
-    print(f"\n{Theme.SEC}{'═'*60}{Theme.RES}")
+    print(f"\n{Theme.SEC}{'═'*55}{Theme.RES}")
 
-def menu():
+def show_all_servers(results):
+    logo()
+    print(f"{Theme.INF}📋 ဆာဗာအားလုံးစာရင်း{Theme.RES}\n")
+    print(f"  {'#':<4} {'Ping':<16} {'ဆာဗာအမည်'}")
+    print(f"  {'─'*55}")
+    for i, r in enumerate(results, 1):
+        flag = get_flag(r["name"])
+        bar = ping_bar(r["ms"])
+        name = r["name"][:35]
+        print(f"  [{i:02d}] {bar:<16} {flag} {name}")
+
+def main_menu():
     keys = load_sources()
     if not keys:
         input(f"\n{Theme.INF}ပြန်ရန် Enter နှိပ်ပါ...{Theme.RES}")
         return
     results = scan_all(keys)
+    
     while True:
         logo()
         print(f"{Theme.BLD}{Theme.INF}📋 အဓိက မီနူး{Theme.RES}\n")
-        print(f"  [1] 🏆 အကောင်းဆုံး ဆာဗာကို ချက်ချင်းရွေးပါ")
-        print(f"  [2] 📊 အမြန်ဆုံး 10 ခုကို ကြည့်ပါ")
-        print(f"  [3] 📋 ဆာဗာအားလုံးစာရင်း")
-        print(f"  [4] 🔄 ပြန်လည်စကင်န်ဖတ်ပါ")
-        print(f"  [0] ❌ ထွက်ပါ")
+        print(f"  {Theme.BLD}[1]{Theme.RES} 🏆 အကောင်းဆုံး ဆာဗာကို ချက်ချင်းရွေးပါ")
+        print(f"  {Theme.BLD}[2]{Theme.RES} 📊 အမြန်ဆုံး 10 ခုကို ကြည့်ပါ")
+        print(f"  {Theme.BLD}[3]{Theme.RES} 📋 ဆာဗာအားလုံးစာရင်း")
+        print(f"  {Theme.BLD}[4]{Theme.RES} 🔄 ပြန်လည်စကင်န်ဖတ်ပါ")
+        print(f"  {Theme.BLD}[0]{Theme.RES} ❌ ထွက်ပါ")
         print()
-        sel = input(f"{Theme.INF}ရွေးချယ်ပါ → {Theme.RES}").strip()
-        if sel == "1":
+        choice = input(f"{Theme.INF}ရွေးချယ်ပါ (0-4) → {Theme.RES}").strip()
+        
+        if choice == "1":
             best = show_top(results, 1)
-            if best: show_best(best, len(results), len(keys), results)
+            if best:
+                show_best(best, len(results), len(keys), results)
             input(f"\n{Theme.INF}ပြန်ရန် Enter နှိပ်ပါ...{Theme.RES}")
-        elif sel == "2":
+        elif choice == "2":
             show_top(results, 10)
             input(f"\n{Theme.INF}ပြန်ရန် Enter နှိပ်ပါ...{Theme.RES}")
-        elif sel == "3":
-            logo()
-            print(f"{Theme.INF}📋 ဆာဗာအားလုံးစာရင်း{Theme.RES}\n")
-            for i, r in enumerate(results, 1):
-                flag = get_flag(r["name"])
-                bar = ping_bar(r["ms"])
-                print(f"  [{i:02d}] {flag} {r['name'][:35]:<38} {bar}")
+        elif choice == "3":
+            show_all_servers(results)
             input(f"\n{Theme.INF}ပြန်ရန် Enter နှိပ်ပါ...{Theme.RES}")
-        elif sel == "4":
+        elif choice == "4":
             keys = load_sources()
-            if keys: results = scan_all(keys)
-        elif sel == "0":
-            print(f"{Theme.SUC}👋 ကောင်းသောနေ့လည်ခင်းဖြစ်ပါစေ!{Theme.RES}")
+            if keys:
+                results = scan_all(keys)
+        elif choice == "0":
+            print(f"\n{Theme.SUC}👋 ကောင်းသောနေ့လည်ခင်းဖြစ်ပါစေ!{Theme.RES}")
             break
+        else:
+            print(f"\n{Theme.ERR}❌ ရွေးချယ်မှုမှားနေပါသည်! 0-4 ကြားသာထည့်ပါ{Theme.RES}")
+            time.sleep(1)
 
 if __name__ == "__main__":
     try:
-        menu()
+        main_menu()
     except KeyboardInterrupt:
-        print(f"\n{Theme.SUC}👋 ပျော်ရွှင်ဖွယ်ရှိပါစေ!{Theme.RES}")
+        print(f"\n\n{Theme.SUC}👋 ပျော်ရွှင်ဖွယ်ရှိပါစေ!{Theme.RES}")
     except Exception as e:
         print(f"\n{Theme.ERR}အမှားအယွင်း: {str(e)}{Theme.RES}")
-        input(f"ဆက်ရန် Enter...")
+        input(f"ဆက်ရန် Enter နှိပ်ပါ...")
+    
