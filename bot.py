@@ -1,139 +1,123 @@
-import os
-import urllib.request
-import urllib.parse
-import json
-import base64
-import time
+#!/usr/bin/env python3
+import urllib.request, json, base64, os, sys
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-API_URL = os.environ.get("API_URL")
+API_URL = "https://shadowmere.xyz/api/sub/"
+VERSION = "1.0"
 
-_server_cache = None
-_server_last_check = 0
-CACHE_DURATION = 60
+def clear():
+    os.system("clear")
 
-def get_servers():
-    global _server_cache, _server_last_check
-    now = time.time()
-    if _server_cache and (now - _server_last_check) < CACHE_DURATION:
-        return _server_cache
+def get_data():
     try:
-        req = urllib.request.Request(
+        r = urllib.request.Request(
             API_URL,
-            headers={
-                "User-Agent": "Mozilla/5.0",
-                "Accept": "application/json"
-            }
+            headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
         )
-        with urllib.request.urlopen(req, timeout=15) as res:
-            data = json.loads(res.read().decode())
-        if isinstance(data, list):
-            _server_cache = data
-            _server_last_check = now
-            return data
-        return []
-    except Exception as e:
-        print(f"API Error: {e}")
-        return []
-
-def get_updates(offset=None):
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-        if offset: url += f"?offset={offset}"
-        with urllib.request.urlopen(url, timeout=10) as res:
+        with urllib.request.urlopen(r, timeout=15) as res:
             return json.loads(res.read().decode())
-    except:
-        return {"result": []}
+    except Exception as e:
+        return []
 
-def send_message(chat_id, text):
+def make_key(s):
     try:
-        data = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "HTML"}).encode()
-        req = urllib.request.Request(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data=data)
-        with urllib.request.urlopen(req, timeout=10) as res:
-            return True
+        info = f"{s['method']}:{s['password']}"
+        b64 = base64.b64encode(info.encode()).decode().rstrip("=")
+        return f"ss://{b64}@{s['server']}:{s['server_port']}#{s['remarks']}"
     except:
-        return False
+        return "❌ မထုတ်နိုင်ပါ"
 
-def generate_ss_link(server):
-    try:
-        userinfo = f"{server['method']}:{server['password']}"
-        b64 = base64.b64encode(userinfo.encode()).decode().rstrip('=')
-        return f"ss://{b64}@{server['server']}:{server['server_port']}#{server['remarks']}"
-    except:
-        return "❌ ဖော်ပြ၍မရပါ"
+def print_header():
+    clear()
+    print("╔════════════════════════════════════════════╗")
+    print("║      🔑  VPN KEY GENERATOR TOOL            ║")
+    print("║        github.com/kojoo88/vpn-key-bot      ║")
+    print("║             Version " + VERSION + "                        ║")
+    print("╚════════════════════════════════════════════╝")
+    print()
+    print("*" * 48)
+    print()
 
 def main():
-    last_update_id = 0
-    print("✅ Bot အလုပ်လုပ်နေပြီ! Telegram မှာ /start ရိုက်ပါ")
+    data = get_data()
+    
     while True:
-        updates = get_updates(last_update_id + 1)
-        if "result" in updates and updates["result"]:
-            for upd in updates["result"]:
-                last_update_id = upd["update_id"]
-                if "message" not in upd: continue
-                msg = upd["message"]
-                chat_id = msg["chat"]["id"]
-                text = msg.get("text", "").strip().lower()
-                
-                if text == "/start":
-                    send_message(chat_id, """👋 VPN Key Bot မှ ကြိုဆိုပါတယ်!
-
-အမှာစာများ-
-/all  - ဆာဗာအားလုံး
-/sg   - Singapore 🇸🇬
-/hk   - Hong Kong 🇭🇰
-/jp   - Japan 🇯🇵
-/kr   - Korea 🇰🇷
-/us   - United States 🇺🇸
-/nl   - Netherlands 🇳🇱
-/de   - Germany 🇩🇪
-/uk   - United Kingdom 🇬🇧
-/za   - South Africa 🇿🇦
-/br   - Brazil 🇧🇷
-/at   - Austria 🇦🇹
-/ca   - Canada 🇨🇦
-
-ss:// လင့်ကို ကော်ပီကူးပြီး Shadowsocks မှာ အသုံးပြုပါ။""")
-                
-                elif text == "/all":
-                    servers = get_servers()
-                    if not servers:
-                        send_message(chat_id, "❌ ဒေတာရယူ၍မရပါ")
-                        continue
-                    reply = f"✅ စုစုပေါင်း ဆာဗာ {len(servers)} လုံး\n\n"
-                    for s in servers[:12]:
-                        reply += f"{s.get('remarks','အမည်မသိ')}\n<code>{generate_ss_link(s)}</code>\n\n"
-                    send_message(chat_id, reply)
-                
-                else:
-                    kw_map = {
-                        "sg": ["sg", "singapore"], "hk": ["hk", "hong"],
-                        "jp": ["jp", "japan"], "kr": ["kr", "korea"],
-                        "us": ["us", "united states"], "nl": ["nl", "netherlands"],
-                        "de": ["de", "germany"], "uk": ["uk", "united kingdom"],
-                        "za": ["za", "south africa", "johannesburg"],
-                        "br": ["br", "brazil"], "at": ["at", "austria"],
-                        "ca": ["ca", "canada"]
-                    }
-                    cmd = text.lstrip("/")
-                    if cmd in kw_map:
-                        servers = get_servers()
-                        found = []
-                        for s in servers:
-                            rem = s.get("remarks", "").lower()
-                            for kw in kw_map[cmd]:
-                                if kw in rem:
-                                    found.append(s)
-                                    break
-                        if not found:
-                            reply = f"❌ {cmd.upper()} ဆာဗာ မတွေ့ပါ"
-                        else:
-                            reply = f"✅ {cmd.upper()} – စုစုပေါင်း {len(found)} ခု\n\n"
-                            for s in found:
-                                reply += f"{s['remarks']}\n<code>{generate_ss_link(s)}</code>\n\n"
-                        send_message(chat_id, reply)
-        time.sleep(2)
+        print_header()
+        if not data:
+            print("  ⚠️  ဆာဗာဒေတာ ရယူ၍မရပါ။ ကွန်နက်ရှင်စစ်ဆေးပါ။")
+            print()
+        print("  [ နိုင်ငံရွေးချယ်ရန် ]")
+        print()
+        print("  [ 1 ]  📋 ALL  —  နိုင်ငံအားလုံး")
+        print("  [ 2 ]  🇺🇸 USA  —  အမေရိကန်")
+        print("  [ 3 ]  🇸🇬 SGP  —  စင်ကာပူ")
+        print("  [ 4 ]  🇭🇰 HKG  —  ဟောင်ကောင်")
+        print("  [ 5 ]  🇯🇵 JPN  —  ဂျပန်")
+        print("  [ 6 ]  🇰🇷 KOR  —  ကိုရီးယား")
+        print("  [ 7 ]  🇿🇦 ZAF  —  တောင်အာဖရိက")
+        print("  [ 0 ]  ❌ EXIT —  ပရိုဂရမ်မှထွက်ရန်")
+        print()
+        print("*" * 48)
+        choice = input("  ➤ ရွေးချယ်မှု: ").strip()
+        
+        if choice == "0":
+            print_header()
+            print("  ✅ အသုံးပြုသည့်အတွက် ကျေးဇူးတင်ပါသည်!")
+            print("  👋 ပရိုဂရမ်မှ ထွက်လိုက်ပါပြီ။")
+            print()
+            sys.exit(0)
+        
+        filtered = []
+        title = ""
+        
+        if choice == "1":
+            filtered = data
+            title = "📋 နိုင်ငံအားလုံး"
+        elif choice == "2":
+            filtered = [s for s in data if "us" in s.get("remarks","").lower()]
+            title = "🇺🇸 United States"
+        elif choice == "3":
+            filtered = [s for s in data if any(v in s.get("remarks","").lower() for v in ["sg", "singapore"])]
+            title = "🇸🇬 Singapore"
+        elif choice == "4":
+            filtered = [s for s in data if any(v in s.get("remarks","").lower() for v in ["hk", "hong"])]
+            title = "🇭🇰 Hong Kong"
+        elif choice == "5":
+            filtered = [s for s in data if any(v in s.get("remarks","").lower() for v in ["jp", "japan"])]
+            title = "🇯🇵 Japan"
+        elif choice == "6":
+            filtered = [s for s in data if any(v in s.get("remarks","").lower() for v in ["kr", "korea"])]
+            title = "🇰🇷 Korea"
+        elif choice == "7":
+            filtered = [s for s in data if any(v in s.get("remarks","").lower() for v in ["za", "south africa"])]
+            title = "🇿🇦 South Africa"
+        else:
+            print_header()
+            print("  ❌ မှားယွင်းသောရွေးချယ်မှု။ ထပ်မံကြိုးစားပါ။")
+            input("\n  ပြန်မီနူးသို့ရန် Enter နှိပ်ပါ...")
+            continue
+        
+        print_header()
+        print(f"  📌 {title}")
+        print(f"  🔄 စုစုပေါင်း: {len(filtered)} Server")
+        print()
+        if not filtered:
+            print("  ⚠️  ဤနိုင်ငံအတွက် Server မတွေ့ပါ။")
+        else:
+            print("  ─" * 24)
+            for idx, srv in enumerate(filtered, 1):
+                name = srv.get("remarks", f"Server {idx}")
+                key = make_key(srv)
+                print(f"  [{idx}] {name}")
+                print(f"      {key}")
+                print()
+            print("  ─" * 24)
+        input("\n  မီနူးသို့ပြန်ရန် Enter နှိပ်ပါ...")
 
 if __name__ == "__main__":
-    main()
-      
+    try:
+        main()
+    except KeyboardInterrupt:
+        clear()
+        print("\n\n  ⚠️  ပရိုဂရမ်မှ ထွက်လိုက်ပါသည်။")
+        sys.exit(0)
+        
