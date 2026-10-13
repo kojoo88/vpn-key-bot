@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 import urllib.request
 import urllib.error
+import base64
 import os
 import socket
 import time
 from datetime import datetime
 
-VERSION = "5.9 ⚡ MIRRORS"
+VERSION = "5.10 ⚡ DIRECT LINKS"
 
 class Colors:
     C = "\033[96m"
@@ -25,90 +26,115 @@ def header():
     print(f"{Colors.C}{'='*55}{Colors.RESET}")
     print()
 
-# Mirror အသစ်များ — ကွန်ရက်အလိုက် ကွဲပြားစွာသုံးမည်
-SOURCE_LINKS = [
-    # Mirror 1 — jsdelivr (GitHub CDN, မြန်မာတွင် ပိုမိုဝင်လွယ်)
-    "https://cdn.jsdelivr.net/gh/ymyuuu/ymyuuu.github.io@main/vless.txt",
-    # Mirror 2 — ghproxy
-    "https://ghproxy.com/https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list.txt",
-    # Mirror 3 — ပုံမှန် GitHub
-    "https://raw.githubusercontent.com/ircfspace/worker/main/dist/subscribe.txt",
-    # Mirror 4 — အခြားအရင်းအမြစ်
-    "https://cdn.jsdelivr.net/gh/aiboboxx/v2rayfree@main/v2.md",
+# သင်ပေးလိုက်တဲ့ တိုက်ရိုက်လင့်ခ်သစ်များ
+SOURCES = [
+    {
+        "name": "Shadowmere JSON",
+        "url": "https://shadowmere.xyz/api/sub/",
+        "type": "json"
+    },
+    {
+        "name": "Shadowmere Base64",
+        "url": "https://shadowmere.xyz/api/b64sub/",
+        "type": "b64"
+    },
+    {
+        "name": "GitHub VLESS List",
+        "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt",
+        "type": "txt"
+    }
 ]
 
-def fetch_from_source(url):
+def fetch_url(source):
+    print(f"  📥 ဖတ်နေသည်: {source['name']}...")
     try:
         req = urllib.request.Request(
-            url,
+            source["url"],
             headers={
-                "User-Agent": "Mozilla/5.0 (Android; Mobile; rv:120.0) Gecko/120.0 Firefox/120.0",
-                "Cache-Control": "no-cache"
+                "User-Agent": "Mozilla/5.0 (Android 14; Mobile; rv:125.0) Gecko/125.0 Firefox/125.0",
+                "Accept": "*/*"
             }
         )
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            return resp.read().decode("utf-8", errors="ignore")
+        with urllib.request.urlopen(req, timeout=25) as res:
+            return res.read().decode("utf-8", errors="ignore")
     except urllib.error.HTTPError as e:
-        return f"ERROR_HTTP:{e.code}"
+        print(f"    ❌ HTTP အမှား: {e.code}")
+        return None
     except urllib.error.URLError as e:
-        return f"ERROR_NETWORK:{str(e)[:40]}"
+        print(f"    ❌ ကွန်ရက်အမှား: {str(e)[:40]}")
+        return None
     except Exception as e:
-        return f"ERROR:{str(e)[:40]}"
+        print(f"    ❌ ဖတ်လို့မရ: {str(e)[:40]}")
+        return None
 
-def parse_keys(text):
+def parse_keys(text, source_type):
     keys = []
-    lines = text.splitlines()
-    for line in lines:
-        line = line.strip()
-        if line.startswith("vless://") or line.startswith("ss://") or line.startswith("vmess://"):
-            name = "VPN Server"
-            if "#" in line:
-                try:
-                    from urllib.parse import unquote
-                    name = unquote(line.split("#")[-1])
-                except:
-                    name = line.split("#")[-1][:40]
-            keys.append({"name": name, "key": line})
+    if not text:
+        return keys
+    
+    if source_type == "json":
+        try:
+            data = __import__("json").loads(text)
+            if isinstance(data, list):
+                for item in data:
+                    key = item.get("url") or item.get("link") or ""
+                    name = item.get("name") or item.get("remarks") or "Server"
+                    if key and ("vless://" in key or "ss://" in key or "vmess://" in key):
+                        keys.append({"name": name, "key": key})
+        except Exception as e:
+            print(f"    ⚠️ JSON ဖတ်လို့မရ: {str(e)[:30]}")
+    
+    elif source_type == "b64":
+        try:
+            decoded = base64.b64decode(text).decode("utf-8", errors="ignore")
+            for line in decoded.splitlines():
+                line = line.strip()
+                if line and ("://" in line):
+                    name = "Server"
+                    if "#" in line:
+                        try:
+                            from urllib.parse import unquote
+                            name = unquote(line.split("#")[-1])
+                        except:
+                            name = line.split("#")[-1][:40]
+                    keys.append({"name": name, "key": line})
+        except Exception as e:
+            print(f"    ⚠️ Base64 ဖတ်လို့မရ: {str(e)[:30]}")
+    
+    elif source_type == "txt":
+        for line in text.splitlines():
+            line = line.strip()
+            if line and ("vless://" in line or "ss://" in line or "vmess://" in line):
+                name = "Server"
+                if "#" in line:
+                    try:
+                        from urllib.parse import unquote
+                        name = unquote(line.split("#")[-1])
+                    except:
+                        name = line.split("#")[-1][:40]
+                keys.append({"name": name, "key": line})
+    
     return keys
 
 def get_all_keys():
     all_keys = []
-    print("  🔍 ဆာဗာများကို ရှာဖွေနေသည်...")
-    print()
-    
-    for idx, url in enumerate(SOURCE_LINKS, 1):
-        short_url = url[:55] + "..." if len(url) > 55 else url
-        print(f"  [{idx}/{len(SOURCE_LINKS)}] ဖတ်နေသည်: {short_url}")
-        
-        result = fetch_from_source(url)
-        
-        if result.startswith("ERROR"):
-            print(f"      {Colors.R}❌ မအောင်မြင်ပါ: {result}{Colors.RESET}")
-            print(f"      {Colors.Y}💡 နောက်အရင်းအမြစ်သို့ ပြောင်းနေသည်...{Colors.RESET}")
-            print()
-            continue
-        
-        keys = parse_keys(result)
-        if keys:
-            all_keys.extend(keys)
-            print(f"      {Colors.G}✅ အောင်မြင်သည်! ကီး {len(keys)} ခု တွေ့ရှိခဲ့သည်{Colors.RESET}")
-            print()
-            # တစ်ခုအောင်မြင်ပြီးသားဆို ရပ်တန့်မည်
-            if len(all_keys) >= 3:
-                break
-        else:
-            print(f"      {Colors.Y}⚠️ အကြောင်းအရာမတွေ့ပါ{Colors.RESET}")
-            print()
-    
-    # တူညီသောကီးများကို ဖယ်ရှားမည်
     seen = set()
-    unique_keys = []
-    for item in all_keys:
-        if item["key"] not in seen:
-            seen.add(item["key"])
-            unique_keys.append(item)
     
-    return unique_keys
+    for src in SOURCES:
+        text = fetch_url(src)
+        if text:
+            keys = parse_keys(text, src["type"])
+            if keys:
+                for k in keys:
+                    if k["key"] not in seen:
+                        seen.add(k["key"])
+                        all_keys.append(k)
+                print(f"    ✅ {len(keys)} ခု တွေ့ရှိခဲ့သည်")
+            else:
+                print(f"    ⚠️ ကီးမတွေ့ပါ")
+        print()
+    
+    return all_keys
 
 def extract_host(key):
     try:
@@ -122,14 +148,14 @@ def ping_test(host, port=443, timeout=0.5):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(timeout)
-        start = time.time()
+        st = time.time()
         s.connect((host, int(port)))
         s.close()
-        return round((time.time() - start) * 1000)
+        return round((time.time() - st) * 1000)
     except:
         return 9999
 
-def copy_to_clipboard(text):
+def copy_key(text):
     try:
         import subprocess
         subprocess.run(["termux-clipboard-set", text])
@@ -137,82 +163,71 @@ def copy_to_clipboard(text):
     except:
         return False
 
-def show_result(item, ms=0):
-    print(f"\n{Colors.G}{'─'*55}{Colors.RESET}")
-    print(f"  📌 အမည်: {item['name']}")
-    if ms > 0:
-        if ms < 200:
-            status = f"{Colors.G}{ms}ms  အမြန်{Colors.RESET}"
-        elif ms < 400:
-            status = f"{Colors.Y}{ms}ms  အတန်းအစား{Colors.RESET}"
-        else:
-            status = f"{Colors.R}{ms}ms  နှေး{Colors.RESET}"
-        print(f"  📶 မြန်နှုန်း: {status}")
-    print(f"  🔑 ကီး:")
-    print(f"  {Colors.W}{item['key']}{Colors.RESET}")
-    print(f"{Colors.G}{'─'*55}{Colors.RESET}")
-    
-    if copy_to_clipboard(item["key"]):
-        print(f"  ✅ ကီးကို ကူးယူပြီးပါပြီ! အသုံးပြုရန် VPN အက်ပ်ထဲတွင် ကူးထည့်ပါ။")
-    else:
-        print(f"  ⚠️ အထက်ကကီးကို ကိုယ်တိုင်ကူးယူပါ")
-    print()
-
 def main():
     header()
+    print("  🔍 ကီးများကို ရယူနေသည်...")
+    print()
+    
     keys = get_all_keys()
     
     if not keys:
         print(f"  {Colors.R}❌ မည်သည့်ကီးကိုမျှ မတွေ့ပါ{Colors.RESET}")
         print()
-        print(f"  {Colors.Y}💡 ဖြေရှင်းနည်းများ:{Colors.RESET}")
-        print(f"     ၁။ WiFi မှ မိုဘိုင်းဒေတာသို့ ပြောင်းပါ")
-        print(f"     ၂။ VPN သို့မဟုတ် ပရောက်စီကို ပိတ်ပါ")
-        print(f"     ၃။ အင်တာနက် ချိတ်ဆက်မှုကို စစ်ဆေးပါ")
-        print(f"     ၄။ ပြန်လည်စတင်ပါ")
-        print()
-        input("  ထွက်ရန် Enter နှိပ်ပါ...")
+        print(f"  {Colors.Y}💡 စစ်ဆေးပါ:{Colors.RESET}")
+        print(f"     • အင်တာနက် ချိတ်ဆက်မှု")
+        print(f"     • VPN / ပရောက်စီ ပိတ်ထားခြင်း")
+        print(f"     • WiFi ↔ မိုဘိုင်းဒေတာ ပြောင်းကြည့်ပါ")
+        input("  ပြန်ရန် Enter နှိပ်ပါ...")
         return
     
     print(f"  ✅ စုစုပေါင်း ထူးခြားသော ကီး {len(keys)} ခု အဆင်သင့်ဖြစ်နေသည်")
-    print(f"  📋 အကောင်းဆုံးဆာဗာကို ရွေးချယ်နေသည်...\n")
+    print(f"  📶 အမြန်ဆုံးဆာဗာကို ရွေးချယ်နေသည်...\n")
     
     best_ms = 9999
-    best_item = None
+    best = None
     
-    for idx, item in enumerate(keys[:10], 1):
+    for i, item in enumerate(keys[:15], 1):
         host, port = extract_host(item["key"])
         if not host:
             continue
         ms = ping_test(host, port)
+        
         if ms == 9999:
-            print(f"  [{idx}] {item['name'][:35]:<38} → {Colors.R}မတုံ့ပြန်ပါ{Colors.RESET}")
+            print(f"  [{i:2d}] ❌ {item['name'][:30]:<32} မတုံ့ပြန်ပါ")
             continue
         
-        if ms < 200:
-            tag = f"{Colors.G} ← အကောင်းဆုံး!{Colors.RESET}"
-        elif ms < best_ms:
-            tag = f" အသစ်ပိုမြန်သည်"
-        else:
-            tag = ""
-        
-        print(f"  [{idx}] {item['name'][:35]:<38} → {ms}ms{tag}")
+        status = f"{Colors.G}{ms}ms{Colors.RESET}" if ms < 200 else f"{Colors.Y}{ms}ms{Colors.RESET}" if ms < 400 else f"{Colors.R}{ms}ms{Colors.RESET}"
+        marker = " ← အကောင်းဆုံး!" if ms < best_ms else ""
+        print(f"  [{i:2d}] ✅ {item['name'][:30]:<32} {status}{marker}")
         
         if ms < best_ms:
             best_ms = ms
-            best_item = item
+            best = item
             if ms < 100:
                 break
     
     print()
-    if best_item:
-        show_result(best_item, best_ms)
+    if best:
+        print(f"{Colors.G}{'═'*55}{Colors.RESET}")
+        print(f"{Colors.G} 🏆 အကောင်းဆုံးဆာဗာ{Colors.RESET}")
+        print(f"  📌 အမည်: {best['name']}")
+        print(f"  📶 မြန်နှုန်း: {Colors.G}{best_ms}ms{Colors.RESET}")
+        print(f"  🔑 ကီး:")
+        print(f"  {Colors.W}{best['key']}{Colors.RESET}")
+        print(f"{Colors.G}{'═'*55}{Colors.RESET}")
+        
+        if copy_key(best["key"]):
+            print(f"  ✅ ကီးကို ကူးယူပြီးပါပြီ! VPN အက်ပ်ထဲတွင် ကူးထည့်ပါ။")
+        else:
+            print(f"  ⚠️ အထက်ကကီးကို ကိုယ်တိုင်ကူးယူပါ")
     else:
-        print(f"  {Colors.Y}⚠️ မည်သည့်ဆာဗာမျှ မတုံ့ပြန်ပါ{Colors.RESET}")
-        print(f"  သို့သော် အောက်ပါကီးကို သင်ကိုယ်တိုင် အသုံးပြုနိုင်ပါသည်-")
-        show_result(keys[0])
+        print(f"  {Colors.Y}⚠️ ဆာဗာအားလုံး မတုံ့ပြန်ပါ{Colors.RESET}")
+        print(f"  ပထမဆုံးကီးကို ပြပေးမည်-")
+        print(f"  🔑 {keys[0]['key']}")
+        if copy_key(keys[0]["key"]):
+            print(f"  ✅ ကူးယူပြီးပါပြီ!")
     
-    input("  ပြီးဆုံးရန် Enter နှိပ်ပါ...")
+    input("\n  ပြီးဆုံးရန် Enter နှိပ်ပါ...")
 
 if __name__ == "__main__":
     try:
@@ -220,6 +235,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n\n  👋 ပျော်ရွှင်ဖွယ်ရှိပါစေ!")
     except Exception as e:
-        print(f"\n  {Colors.R}အမှားအယွင်း: {str(e)}{Colors.RESET}")
+        print(f"\n  {Colors.R}အမှား: {str(e)}{Colors.RESET}")
         input("  ထွက်ရန် Enter နှိပ်ပါ...")
-        
+                    
