@@ -8,52 +8,54 @@ import socket
 import time
 from datetime import datetime
 
-ဗားရှင်း = "5.4 ⚡ အမြန်"
-ဖိုင်လမ်းကြောင်း = os.path.join(os.path.expanduser("~"), "vpn-key-bot", "သိမ်းထားများ.txt")
+VERSION = "5.4 ⚡ FAST"
+FAV_FILE = os.path.join(os.path.expanduser("~"), "vpn-key-bot", "favorites.txt")
 
-class အရောင်များ:
-    အပြာ = "\033[96m"
-    အစိမ်း = "\033[92m"
-    အဝါ = "\033[93m"
-    အနီ = "\033[91m"
-    အဖြူ = "\033[97m"
-    ပုံမှန် = "\033[0m"
-အရောင် = အရောင်များ()
+class Colors:
+    CYAN = "\033[96m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    WHITE = "\033[97m"
+    RESET = "\033[0m"
 
-ဦးစားပေးနိုင်ငံများ = ["singapore", "malaysia", "thailand", "vietnam", "hong", "japan", "korea"]
+C = Colors()
 
-def ဖန်သားပြင်ရှင်း():
+PRIORITY = ["singapore", "malaysia", "thailand", "vietnam", "hong", "japan", "korea"]
+
+def clear():
     os.system("clear")
 
-def ခေါင်းစဉ်():
-    ဖန်သားပြင်ရှင်း()
-    print(f"{အရောင်အပြာ}{'='*42}{အရောင်ပုံမှန်}")
-    print(f"{အရောင်အပြာ}⚡ VPN ကီးရှာစက် — {ဗားရှင်း}{အရောင်ပုံမှန်}")
-    print(f"{အရောင်အပြာ}{'='*42}{အရောင်ပုံမှန်}\n")
+def header():
+    clear()
+    print(f"{C.CYAN}{'='*42}{C.RESET}")
+    print(f"{C.CYAN}⚡ VPN Key Finder — {VERSION}{C.RESET}")
+    print(f"{C.CYAN}{'='*42}{C.RESET}")
+    print()
 
-def အလံ(အမည်):
-    စာ = အမည်.lower()
-    if "singapore" in စာ: return "🇸🇬"
-    if "malaysia" in စာ: return "🇲🇾"
-    if "thailand" in စာ: return "🇹🇭"
-    if "vietnam" in စာ: return "🇻🇳"
-    if "hong" in စာ: return "🇭🇰"
-    if "japan" in စာ: return "🇯🇵"
-    if "korea" in စာ: return "🇰🇷"
+def get_flag(name):
+    n = name.lower()
+    if "singapore" in n: return "🇸🇬"
+    if "malaysia" in n: return "🇲🇾"
+    if "thailand" in n: return "🇹🇭"
+    if "vietnam" in n: return "🇻🇳"
+    if "hong" in n: return "🇭🇰"
+    if "japan" in n: return "🇯🇵"
+    if "korea" in n: return "🇰🇷"
     return "🌐"
 
-def pingစစ်(host, port=443, စောင့်ချိန်=0.3):
+def ping_test(host, port=443, timeout=0.3):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(စောင့်ချိန်)
-        စ = time.time()
+        s.settimeout(timeout)
+        start = time.time()
         s.connect((host, int(port)))
         s.close()
-        return round((time.time() - စ) * 1000)
+        return round((time.time() - start) * 1000)
     except:
         return 9999
 
-def အချက်အလက်ရယူ(url):
+def fetch_data(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as res:
@@ -61,99 +63,106 @@ def အချက်အလက်ရယူ(url):
     except:
         return None
 
-def ကီးများရယူ():
-    ကီးစာရင်း = []
-    ဒေတာ = အချက်အလက်ရယူ("https://shadowmere.xyz/api/sub/")
-    if ဒေတာ and isinstance(ဒေတာ, list):
-        for x in ဒေတာ:
-            ကီး = x.get("url") or x.get("link") or ""
-            အမည် = x.get("name") or "ဆာဗာ"
-            if ကီး and ("vless://" in ကီး or "ss://" in ကီး):
-                ဦးစားပေး = 99
-                for i, နိုင်ငံ in enumerate(ဦးစားပေးနိုင်ငံများ):
-                    if နိုင်ငံ in အမည်.lower():
-                        ဦးစားပေး = i
+def get_keys():
+    keys = []
+    data = fetch_data("https://shadowmere.xyz/api/sub/")
+    if data and isinstance(data, list):
+        for item in data:
+            key = item.get("url") or item.get("link") or ""
+            name = item.get("name") or "Server"
+            if key and ("vless://" in key or "ss://" in key):
+                priority = 99
+                for i, country in enumerate(PRIORITY):
+                    if country in name.lower():
+                        priority = i
                         break
-                ကီးစာရင်း.append({"အမည်":အမည်, "ကီး":ကီး, "ဦးစားပေး":ဦးစားပေး})
-    ကီးစာရင်း.sort(key=lambda x: x["ဦးစားပေး"])
-    return ကီးစာရင်း[:15]
+                keys.append({"name": name, "key": key, "priority": priority})
+    keys.sort(key=lambda x: x["priority"])
+    return keys[:15]
 
-def hostထုတ်(ကီး):
+def extract_host(key):
     try:
-        if "://" in ကီး:
+        if "://" in key:
             from urllib.parse import urlparse
-            return urlparse(ကီး).hostname or ""
+            return urlparse(key).hostname or ""
     except:
         return ""
 
-def ကူးယူ(စာသား):
+def copy_to_clipboard(text):
     try:
         import subprocess
-        subprocess.run(["termux-clipboard-set", စာသား])
+        subprocess.run(["termux-clipboard-set", text])
         return True
     except:
         return False
 
-def အကောင်းဆုံးရှာ():
-    ခေါင်းစဉ်()
-    print("  🔍 အကောင်းဆုံးဆာဗာကို ရှာဖွေနေသည်...")
-    print("  📍 ဦးစားပေး → စင်ကာပူ > မလေးရှား > ထိုင်း > ဗီယက်နမ် > ဟောင်ကောင်း > ဂျပန် > ကိုရီးယား\n")
+def find_best():
+    header()
+    print("  🔍 Finding best server...")
+    print("  📍 Priority: SG > MY > TH > VN > HK > JP > KR")
+    print()
     
-    ကီးများ = ကီးများရယူ()
-    if not ကီးများ:
-        print(f"  {အရောင်အနီ}❌ ကီးမရှိပါ{အရောင်ပုံမှန်}")
-        input("  ရှေ့ဆက်ရန် Enter နှိပ်ပါ...")
+    keys = get_keys()
+    if not keys:
+        print(f"  {C.RED}❌ No keys found!{C.RESET}")
+        input("  Press Enter to exit...")
         return
     
-    အကောင်းဆုံးms = 9999
-    အကောင်းဆုံး = None
+    best_ms = 9999
+    best_server = None
     
-    for i, ပစ္စည်း in enumerate(ကီးများ, 1):
-        လိပ်စာ = hostထုတ်(ပစ္စည်း["ကီး"])
-        if not လိပ်စာ:
+    for i, item in enumerate(keys, 1):
+        host = extract_host(item["key"])
+        if not host:
             continue
-        ms = pingစစ်(လိပ်စာ)
-        ပြသမှု = f"{အရောင်အစိမ်း}{ms}ms{အရောင်ပုံမှန်}" if ms < 200 else f"{အရောင်အနီ}{ms}ms{အရောင်ပုံမှန်}"
-        print(f"  {အလံ(ပစ္စည်း['အမည်'])} {i}. {ပစ္စည်း['အမည်'][:25]:<28} → {ပြသမှု}")
+        ms = ping_test(host)
+        display = f"{C.GREEN}{ms}ms{C.RESET}" if ms < 200 else f"{C.RED}{ms}ms{C.RESET}"
+        print(f"  {get_flag(item['name'])} {i}. {item['name'][:25]:<28} → {display}")
         
-        if ms < အကောင်းဆုံးms:
-            အကောင်းဆုံးms = ms
-            အကောင်းဆုံး = ပစ္စည်း
+        if ms < best_ms:
+            best_ms = ms
+            best_server = item
             if ms < 80:
                 break
     
-    if not အကောင်းဆုံး:
-        print(f"\n  {အရောင်အနီ}❌ မည်သည့်ဆာဗာမှ အကျဉ်းမတုံ့ပြန်ပါ{အရောင်ပုံမှန်}")
+    if not best_server:
+        print(f"\n  {C.RED}❌ No server responded{C.RESET}")
         return
     
-    အချိန် = datetime.now().strftime("%H:%M:%S")
-    print(f"\n{အရောင်အစိမ်း}{'='*42}{အရောင်ပုံမှန်}")
-    print(f"{အရောင်အစိမ်း} ✅ အကောင်းဆုံး - {အလံ(အကောင်းဆုံး['အမည်'])} {အကောင်းဆုံး['အမည်']}{အရောင်ပုံမှန်}")
-    print(f" 📶 မြန်နှုန်း: {အရောင်အစိမ်း}{အကောင်းဆုံးms}ms{အရောင်ပုံမှန်}  🕐 အချိန်: {အချိန်}")
-    print(f"{အရောင်အစိမ်း}{'='*42}{အရောင်ပုံမှန်}")
-    print(f"\n  🔑 ကီး:\n  {အရောင်အဖြူ}{အကောင်းဆုံး['ကီး']}{အရောင်ပုံမှန်}\n")
+    now = datetime.now().strftime("%H:%M:%S")
+    print()
+    print(f"{C.GREEN}{'='*42}{C.RESET}")
+    print(f"{C.GREEN} ✅ BEST: {get_flag(best_server['name'])} {best_server['name']}{C.RESET}")
+    print(f" 📶 Ping: {C.GREEN}{best_ms}ms{C.RESET}  🕐 Time: {now}")
+    print(f"{C.GREEN}{'='*42}{C.RESET}")
+    print()
+    print(f"  🔑 KEY:")
+    print(f"  {C.WHITE}{best_server['key']}{C.RESET}")
+    print()
     
-    if ကူးယူ(အကောင်းဆုံး["ကီး"]):
-        print(f"  {အရောင်အစိမ်း}✅ ကီးကို ကူးယူပြီးပါပြီ!{အရောင်ပုံမှန်}")
+    if copy_to_clipboard(best_server["key"]):
+        print(f"  {C.GREEN}✅ Copied to clipboard!{C.RESET}")
     else:
-        print(f"  ⚠️ အထက်ကကီးကို ကိုယ်တိုင်ကူးယူပါ")
+        print(f"  ⚠️ Copy the key above manually")
     
-    input("\n  ပိတ်ရန် Enter နှိပ်ပါ...")
+    input("\n  Press Enter to exit...")
 
-def မီနူး():
+def main_menu():
     while True:
-        ခေါင်းစဉ်()
-        print("  ⚡ [F] အကောင်းဆုံးကို ချက်ချင်းရှာမည်")
-        print("  🚪 [X] ပိတ်မည်\n")
-        ရွေးချယ်မှု = input("  ရွေးချယ်ပါ: ").strip().upper()
-        if ရွေးချယ်မှု == "F":
-            အကောင်းဆုံးရှာ()
-        elif ရွေးချယ်မှု == "X":
-            print("  👋 ပျော်ရွှင်ဖွယ်ရှိပါစေ!")
+        header()
+        print("  ⚡ [F] Find Best Server")
+        print("  🚪 [X] Exit")
+        print()
+        choice = input("  Choose: ").strip().upper()
+        if choice == "F":
+            find_best()
+        elif choice == "X":
+            print("  👋 Goodbye!")
             break
 
 if __name__ == "__main__":
     try:
-        မီနူး()
+        main_menu()
     except KeyboardInterrupt:
-        print("\n  👋 ပျော်ရွှင်ဖွယ်ရှိပါစေ!")
+        print("\n  👋 Goodbye!")
+    
