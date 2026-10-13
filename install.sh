@@ -1,12 +1,15 @@
 #!/data/data/com.termux/files/usr/bin/bash
-pkg update -y && pkg upgrade -y
-pkg install python git -y
-pip install -r requirements.txt
-cd ~/vpn-key-bot 2>/dev/null || git clone https://github.com/kojoo88/vpn-key-bot.git ~/vpn-key-bot
+pkg update -y && pkg install python -y
+pip install requests
+cd ~
+if [ ! -d "vpn-key-bot" ]; then
+    git clone https://github.com/kojoo88/vpn-key-bot.git
+fi
 cd ~/vpn-key-bot
 git pull
-echo "alias vpn='cd ~/vpn-key-bot && python bot.py'" >> ~/.bashrc
+chmod +x vpn.py
+if ! grep -q "alias vpn" ~/.bashrc; then
+    echo "alias vpn='cd ~/vpn-key-bot && python vpn.py'" >> ~/.bashrc
+fi
 clear
-echo "✅ VPN Key Bot တပ်ဆင်ပြီးပါပြီ!"
-echo "👉 ဖွင့်ရန်: vpn"
-echo "💡 မရသေးရင်: source ~/.bashrc"
+echo "✅ ပြီးပါပြီ! ဖွင့်ရန်: vpn"
