@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import urllib.request, base64, os, socket, time, datetime
+import urllib.request, base64, os, socket, time, datetime, sys
 
 G = "\033[92m"
 Y = "\033[93m"
@@ -13,7 +13,7 @@ RS = "\033[0m"
 FAVORITES_FILE = "favorites.txt"
 ALL_KEYS_FILE = "all_keys.txt"
 
-def clear():
+def clear_screen():
     os.system("clear")
 
 SOURCES = [
@@ -92,7 +92,7 @@ def parse(text, fmt):
                     "proto": proto,
                     "name": name,
                     "key": line,
-                    "ping_ms": 9999,
+                    "ping_ms": "--",
                     "ping_str": "--",
                     "is_alive": False
                 })
@@ -136,7 +136,7 @@ def load_alive_by_proto(proto):
                     "proto": proto,
                     "name": "Saved Server",
                     "key": line,
-                    "ping_ms": 9999,
+                    "ping_ms": "--",
                     "ping_str": "--",
                     "is_alive": False
                 }
@@ -156,7 +156,8 @@ def save_to_file(keys, filename):
             f.write("Updated: " + str(datetime.datetime.now()) + "\n")
             f.write("Total: " + str(len(keys)) + "\n\n")
             for k in keys:
-                f.write(k["proto"] + " | " + k["name"] + "\n" + k["key"] + "\n\n")
+                f.write(f"{k['proto']} | {k['name']} | {k.get('ping_str', '--')}\n")
+                f.write(f"{k['key']}\n\n")
         return True
     except:
         return False
@@ -187,6 +188,7 @@ def search_name(keys, kw):
     return [k for k in keys if kw in k["name"].upper()]
 
 def show(keys, title="ကီးများ", limit=20):
+    clear_screen()
     if not keys:
         print(f"\n{R}မတွေ့ပါ{RS}\n")
         input("ပြန်ရန် Enter")
@@ -196,8 +198,8 @@ def show(keys, title="ကီးများ", limit=20):
     for i, k in enumerate(keys[:display_count], 1):
         status = f"{G}✅အလုပ်လုပ်{RS}" if k.get("is_alive") else f"{R}❌မစစ်ရသေး{RS}"
         print(f"{i:02d} | {k['proto']:6} | {k['name'][:35]}")
-        print(f"    ⚡{k.get('ping_str', '--')}  {status}")
-        print(f"    🔑{k['key']}\n")
+        print(f"    ⚡ Ping: {k.get('ping_str', '--')}  {status}")
+        print(f"    🔑 Key: {k['key']}\n")
     if len(keys) > display_count:
         print(f"{Y}...နောက်ထပ် {len(keys)-display_count} ခု{RS}\n")
     input("ပြန်ရန် Enter")
@@ -208,10 +210,11 @@ def copy_key(key_text):
         subprocess.run(["termux-clipboard-set"], input=key_text.encode('utf-8'))
         print(f"{G}✅ ကီးကို ကူးယူပြီးပါပြီ!{RS}\n")
     except:
-        print(f"{Y}⚠️ Termux မဟုတ်ပါက ကိုယ်တိုင်ကူးပါ:{RS}\n{key_text}\n")
+        print(f"{Y}⚠️ ကီးကို ကူးယူပါ:{RS}\n{key_text}\n")
     input("ပြန်ရန် Enter")
 
 def scan_by_proto(all_keys, proto):
+    clear_screen()
     keys = [k for k in all_keys if k["proto"] == proto]
     if not keys:
         print(f"\n{R}{proto} ကီးမရှိပါ{RS}\n")
@@ -223,7 +226,7 @@ def scan_by_proto(all_keys, proto):
     
     alive = []
     for i, k in enumerate(keys, 1):
-        print(f"  [{i}/{len(keys)}] {k['name'][:22]}", end="\r")
+        print(f"  [{i}/{len(keys)}] {k['name'][:25]}", end="\r")
         host, port = extract_host_port(k["key"])
         if not host or not port:
             continue
@@ -244,6 +247,7 @@ def scan_by_proto(all_keys, proto):
     return alive
 
 def rescan_saved(proto):
+    clear_screen()
     keys = load_alive_by_proto(proto)
     if not keys:
         print(f"\n{Y}⚠️  {proto} သိမ်းထားတာမရှိသေးပါ{RS}\n")
@@ -255,7 +259,7 @@ def rescan_saved(proto):
     
     updated = []
     for i, k in enumerate(keys, 1):
-        print(f"  [{i}/{len(keys)}] {k['name'][:22]}", end="\r")
+        print(f"  [{i}/{len(keys)}] {k['name'][:25]}", end="\r")
         host, port = extract_host_port(k["key"])
         if not host or not port:
             continue
@@ -276,24 +280,25 @@ def rescan_saved(proto):
     return updated
 
 def show_best(keys, proto):
+    clear_screen()
     if not keys:
         keys = load_alive_by_proto(proto)
     if not keys:
         print(f"\n{R}❌ ပထမဆုံး စစ်ဆေးပေးပါ{RS}\n")
         input("ပြန်ရန် Enter")
         return
-    sorted_keys = sorted(keys, key=lambda x: x["ping_ms"])
-    print(f"\n{M}{BD}🏆 {proto} — အကောင်းဆုံး 10 ခု{RS}\n")
+    sorted_keys = sorted(keys, key=lambda x: x["ping_ms"] if x["ping_ms"] != "--" else 9999)
+    print(f"\n{M}{BD}🏆 {proto} — အကောင်းဆုံး 10 ခု (Ping အနည်းဆုံး){RS}\n")
     for i, k in enumerate(sorted_keys[:10], 1):
-        print(f"{i:02d}. {k['name'][:35]}")
-        print(f"    ⚡ {k['ping_str']}")
-        print(f"    🔑 {k['key']}")
+        print(f"{i:02d}. {k['name'][:40]}")
+        print(f"    ⚡ Ping: {k['ping_str']}")
+        print(f"    🔑 Key: {k['key']}")
         print()
     input("ပြန်ရန် Enter")
 
-# 🔑 ကီးစီမံခန့်ခွဲမှု မီနူး
 def key_management_menu(all_keys):
     while True:
+        clear_screen()
         print(f"\n{M}{BD}🔑 ကီးစီမံခန့်ခွဲမှု{RS}")
         print("════════════════════════════════")
         print(" [1] 📋 ကီးအားလုံးကို ကြည့်ရန်")
@@ -314,6 +319,7 @@ def key_management_menu(all_keys):
         elif c == "1":
             show(all_keys, "ကီးအားလုံး")
         elif c == "2":
+            clear_screen()
             kw = input("ရှာဖွေမည့် စာလုံး/နိုင်ငံအမည် → ").strip()
             result = search_name(all_keys, kw)
             show(result, f"'{kw}' ဖြင့်ရှာဖွေမှု")
@@ -321,9 +327,10 @@ def key_management_menu(all_keys):
             vless = [k for k in all_keys if k["proto"] == "VLESS"]
             show(vless, "VLESS ကီးများ")
         elif c == "4":
-            ss = [k for k in all_keys if k["proto"] == "SS"]
-            show(ss, "SS ကီးများ")
+            ss_list = [k for k in all_keys if k["proto"] == "SS"]
+            show(ss_list, "SS ကီးများ")
         elif c == "5":
+            clear_screen()
             favs = load_favorites()
             if not favs:
                 print(f"\n{Y}⚠️  အကြိုက်ဆုံး မရှိသေးပါ{RS}\n")
@@ -335,6 +342,7 @@ def key_management_menu(all_keys):
                     print()
             input("ပြန်ရန် Enter")
         elif c == "6":
+            clear_screen()
             n = input("အကြိုက်ဆုံးထဲ သိမ်းမည့် ကီးနံပါတ် → ").strip()
             try:
                 idx = int(n) - 1
@@ -349,6 +357,7 @@ def key_management_menu(all_keys):
                 print(f"\n{R}မှားနေတယ်{RS}\n")
             input("ပြန်ရန် Enter")
         elif c == "7":
+            clear_screen()
             favs = load_favorites()
             if not favs:
                 print(f"\n{Y}⚠️  အကြိုက်ဆုံး မရှိသေးပါ{RS}\n")
@@ -375,13 +384,12 @@ def key_management_menu(all_keys):
             print(f"\n{R}မှားနေတယ်{RS}\n")
 
 def main():
-    clear()
+    clear_screen()
     print(f"""{M}{BD}
 ╔══════════════════════════════════════════╗
 ║     🚀 VPN KEY FINDER • PROTO SEPARATED     ║
-║     ✅ VLESS / SS / VMESS / TROJAN          ║
-║     ✅ အမျိုးအစားခွဲ • သီးခြားစီစစ်          ║
-║     ✅ 🔑 ကီးစီမံခန့်ခွဲမှု မီနူးအသစ်         ║
+║     ✅ VLESS/SS သီးခြားစီစစ် • မျက်နှာရှင်း ║
+║     ✅ Ping + Key အတူတကွပြသပေးသည်         ║
 ╚══════════════════════════════════════════╝{RS}""")
     
     all_keys = []
@@ -403,41 +411,38 @@ def main():
     
     vless_keys = [k for k in all_keys if k["proto"] == "VLESS"]
     ss_keys = [k for k in all_keys if k["proto"] == "SS"]
-    vmess_keys = [k for k in all_keys if k["proto"] == "VMESS"]
-    trojan_keys = [k for k in all_keys if k["proto"] == "TROJAN"]
     
     print(f"\n{CY}📊 စုစုပေါင်း ကီးအရေအတွက်:{RS}")
     print(f"   VLESS: {G}{len(vless_keys)}{RS} ခု")
     print(f"   SS:    {G}{len(ss_keys)}{RS} ခု")
-    print(f"   VMESS: {G}{len(vmess_keys)}{RS} ခု")
-    print(f"   TROJAN:{G}{len(trojan_keys)}{RS} ခု")
     print()
     
     while True:
+        clear_screen()
         print(f"{M}{BD}📌 ပင်မမီနူး{RS}")
         print("════════════════════════════")
-        print("  VLESS ကီးများအတွက်")
+        print("  🟦 VLESS ကီးများ")
         print("   [1] 📋 VLESS အားလုံးကို ကြည့်ရန်")
         print("   [2] ⚡ VLESS အသစ်စစ်ပြီး သိမ်းရန်")
         print("   [3] 🔄 VLESS သိမ်းပြီးသားကို ပြန်စစ်ရန်")
         print("   [4] 🏆 VLESS အကောင်းဆုံး ပြရန်")
         print()
-        print("  SS ကီးများအတွက်")
+        print("  🟧 SS ကီးများ")
         print("   [5] 📋 SS အားလုံးကို ကြည့်ရန်")
         print("   [6] ⚡ SS အသစ်စစ်ပြီး သိမ်းရန်")
         print("   [7] 🔄 SS သိမ်းပြီးသားကို ပြန်စစ်ရန်")
         print("   [8] 🏆 SS အကောင်းဆုံး ပြရန်")
         print()
-        print("  🔑 ကီးစီမံခန့်ခွဲမှု")
-        print("   [9] 🔑 ကီးများကို စီမံရန် ⬅️ အသစ်!")
+        print("  🔑 စီမံခန့်ခွဲမှု")
+        print("   [9] 🔑 ကီးများကို စီမံရန်")
         print()
-        print("  အခြား")
         print("   [0] ❌ ထွက်ရန်")
         print("════════════════════════════")
         
         c = input(f"\nရွေးချယ်ပါ → {RS}").strip()
         
         if c == "0":
+            clear_screen()
             print("\n👋 ပါသေး")
             break
         elif c == "1":
@@ -460,6 +465,8 @@ def main():
             key_management_menu(all_keys)
         else:
             print(f"\n{R}မှားနေတယ်{RS}\n")
+            input("ပြန်ရန် Enter")
 
 if __name__ == "__main__":
     main()
+        
