@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # ╔══════════════════════════════════════════════════════════╗
 # ║          🚀 Ultimate VPN Key Finder                      ║
-# ║              — Dream Edition ✨ (Terminal)               ║
+# ║              — Dream Edition ✨ v2.0                      ║
 # ╚══════════════════════════════════════════════════════════╝
-import urllib.request, base64, socket, time, os, datetime
+import urllib.request, base64, socket, time, os, datetime, sys
 
 # 🎨 COLOR THEME
 BLK = "\033[38;5;234m"
@@ -20,7 +20,7 @@ BD  = "\033[1m"
 RST = "\033[0m"
 
 def clear(): os.system("clear")
-def h(): return "─" * 52
+def h(): return "─" * 54
 
 # 🌐 YOUR SOURCES - DO NOT CHANGE
 SOURCES = [
@@ -78,61 +78,72 @@ def ping_test(url):
         s.connect((p.hostname, p.port or 443))
         ms = int((time.time() - st)*1000)
         s.close()
-        if ms < 80: return True, ms, f"{GRN}🚀 Fast{RST}", 5
-        if ms < 150: return True, ms, f"{GRN}✅ Good{RST}", 4
-        if ms < 250: return True, ms, f"{YEL}⚡ Normal{RST}", 3
-        if ms < 400: return True, ms, f"{ORG}⚠️ Slow{RST}", 2
-        return True, ms, f"{RED}🐢 Slow{RST}", 1
-    except: return False, 9999, f"{RED}❌ Offline{RST}", 0
+        if ms < 80: return True, ms, f"{GRN}🚀 အမြန်ဆန်{RST}", 5
+        if ms < 150: return True, ms, f"{GRN}✅ ကောင်းမွန်{RST}", 4
+        if ms < 250: return True, ms, f"{YEL}⚡ ပုံမှန်{RST}", 3
+        if ms < 400: return True, ms, f"{ORG}⚠️ နှေး{RST}", 2
+        return True, ms, f"{RED}🐢 နှေးနေ{RS}", 1
+    except: return False, 9999, f"{RED}❌ အော့ဖ်လိုင်း{RST}", 0
 
 # 📥 LOAD SOURCES
 def load_all():
     vless, ss = [], []
     print(f"\n{PUR}╭{h()}╮{RST}")
-    print(f"{PUR}│{RST}  {BD}🔄 Loading Sources...{RST}{' '*(36)}{PUR}│{RST}")
+    print(f"{PUR}│{RST}  {BD}🔄 Sources ဖတ်နေသည်...{RST}{' '*(36)}{PUR}│{RST}")
     print(f"{PUR}├{h()}┤{RST}")
     for name, url, fmt in SOURCES:
-        print(f"{PUR}│{RST}  {name:<18}", end=" ")
+        print(f"{PUR}│{RST}  {name:<20}", end=" ")
         text = fetch(url)
         if text:
             keys = parse(text, fmt)
             v = sum(1 for k in keys if k["type"]=="VLESS")
             s = sum(1 for k in keys if k["type"]=="SS")
-            print(f"{GRN}✓{RST}  VLESS: {v}  SS: {s}")
+            print(f"{GRN}✓{RST} VLESS:{v:>3}  SS:{s:>3}")
             vless.extend([k for k in keys if k["type"]=="VLESS"])
             ss.extend([k for k in keys if k["type"]=="SS"])
         else:
-            print(f"{RED}✗ Failed{RST}")
+            print(f"{RED}✗ မရနိုင်ပါ{RST}")
     print(f"{PUR}╰{h()}╯{RST}")
     return vless, ss
 
-# 🔍 SCAN & SHOW
-def scan(keys, label):
+# 🔍 SCAN & SORT
+def scan_all(keys, label, sort_by="ping"):
     if not keys:
-        print(f"\n{YEL}⚠️  အရင် Sources တွေ Load လုပ်ပါ (Option 1){RST}")
+        print(f"\n{YEL}⚠️ အရင် Sources ဖတ်ပါ [1] ကိုနှိပ်ပါ{RST}")
         time.sleep(1.5)
-        return
+        return []
     results = []
-    print(f"\n{PUR}🔍 {label} Servers စစ်ဆေးနေသည်...{RST}\n")
+    print(f"\n{PUR}🔍 {label} စစ်ဆေးနေသည်...{RST}\n")
     for i, k in enumerate(keys, 1):
         print(f"  [{i}/{len(keys)}] {k['name'][:35]:<35}", end="\r")
         ok, ms, lvl, sc = ping_test(k["url"])
         if ok:
             k.update({"ms":ms,"lvl":lvl,"sc":sc})
             results.append(k)
-    results.sort(key=lambda x:x["ms"])
+    if sort_by == "ping":
+        results.sort(key=lambda x:x["ms"])
+    elif sort_by == "stars":
+        results.sort(key=lambda x:(-x["sc"], x["ms"]))
     print("\n\n")
+    return results
+
+# 📋 DISPLAY RESULTS
+def show_results(results, title):
     if not results:
-        print(f"{RED}❌ အလုပ်လုပ်နေတဲ့ Server မတွေ့ပါ{RST}")
+        print(f"{RED}❌ အလုပ်လုပ်သော Server မတွေ့ပါ{RST}")
         time.sleep(2)
         return
-    print(f"{GRN}🎉 အလုပ်လုပ်နေသော Server {len(results)} လုံးတွေ့ရှိခဲ့သည်{RST}\n")
+    print(f"{GRN}🎉 {title}: {len(results)} လုံးတွေ့ရှိ{RST}\n")
     for i, s in enumerate(results, 1):
         stars = "⭐"*s["sc"] + "☆"*(5-s["sc"])
-        print(f"  {BD}[{i}]{RST} {s['lvl']}  Ping: {s['ms']}ms  {stars}")
+        print(f"  {BD}[{i}]{RST} {s['lvl']}  Ping: {s['ms']:>4}ms  {stars}")
         print(f"      📌 {s['name']}")
         print(f"      🔑 {s['url'][:75]}...")
         print()
+    save_results(results)
+
+# 💾 SAVE
+def save_results(results):
     with open("working_keys.txt", "w", encoding="utf-8") as f:
         f.write("="*50+"\n")
         f.write("🚀 Ultimate VPN Key Finder — Dream Edition ✨\n")
@@ -142,20 +153,55 @@ def scan(keys, label):
         f.write(f"Total   : {len(results)} servers\n")
         f.write("="*50+"\n\n")
         for s in results: f.write(f"{s['url']}\n")
-    print(f"{GRN}✅ working_keys.txt ထဲသိမ်းဆည်းပြီးပါပြီ{RST}")
-    input(f"\n{CYN}ဆက်လုပ်ရန် Enter နှိပ်ပါ...{RST}")
+    print(f"{GRN}✅ working_keys.txt ထဲသိမ်းပြီးပါပြီ{RST}")
 
 # 📄 VIEW SAVED
 def view_file():
     clear()
-    print(f"{PUR}📄 Saved Keys{RST}\n")
+    print(f"{PUR}📄 သိမ်းဆည်းထားသော Keys{RS}\n")
     if not os.path.exists("working_keys.txt"):
-        print(f"{RED}ဖိုင်မရှိသေးပါ။ အရင် Scan လုပ်ပါ။{RST}")
+        print(f"{RED}ဖိုင်မရှိသေးပါ။ အရင်စကင်လုပ်ပါ{RST}")
         time.sleep(2)
         return
     with open("working_keys.txt", "r", encoding="utf-8") as f:
         print(f.read())
-    input(f"\n{CYN}ဆက်လုပ်ရန် Enter နှိပ်ပါ...{RST}")
+    input(f"\n{CYN}ပြန်ရန် Enter နှိပ်ပါ...{RST}")
+
+# 🌟 FIND BEST FOR MY NETWORK
+def find_best_match(keys):
+    if not keys:
+        print(f"\n{YEL}⚠️ အရင် Sources ဖတ်ပါ{RST}")
+        time.sleep(1.5)
+        return
+    results = scan_all(keys, "အကောင်းဆုံးရှာဖွေခြင်း", sort_by="stars")
+    if results:
+        best = results[0]
+        print(f"\n{PUR}╔{h()}╗{RST}")
+        print(f"{PUR}║{RST}  🏆 သင့်လိုင်းအတွက် အကောင်းဆုံး Server{PUR}║{RST}")
+        print(f"{PUR}╠{h()}┤{RST}")
+        stars = "⭐"*best["sc"] + "☆"*(5-best["sc"])
+        print(f"{PUR}║{RST}  အဆင့်  : {stars}{' '*(35)}{PUR}║{RST}")
+        print(f"{PUR}║{RST}  Ping   : {best['ms']}ms{' '*(38-len(str(best['ms'])))}{PUR}║{RST}")
+        print(f"{PUR}║{RST}  နာမည် : {best['name'][:40]}{' '*(42-len(best['name'][:40]))}{PUR}║{RST}")
+        print(f"{PUR}║{RST}  ကီး    : {best['url'][:50]}...{' '*(4)}{PUR}║{RST}")
+        print(f"{PUR}╚{h()}╝{RST}")
+        print(f"\n🔑 ကီးအပြည့်အစုံ-")
+        print(f"  {best['url']}\n")
+        save_results([best])
+    input(f"\n{CYN}ပြန်ရန် Enter နှိပ်ပါ...{RST}")
+
+# 📊 SHOW STATS
+def show_stats(vless, ss):
+    clear()
+    total = len(vless) + len(ss)
+    print(f"{PUR}📊 အချက်အလက်အကျဉ်း{RST}\n")
+    print(f"  စုစုပေါင်း Sources : {GRN}{len(SOURCES)}{RST} ခု")
+    print(f"  VLESS Keys         : {BLU}{len(vless)}{RST} ခု")
+    print(f"  SS Keys            : {ORG}{len(ss)}{RST} ခု")
+    print(f"  စုစုပေါင်း Keys   : {WHT}{total}{RST} ခု")
+    print(f"  လက်ရှိလိုင်းအမျိုးအစား: {CYN}{get_net()}{RST}")
+    print(f"  နောက်ဆုံးဖတ်ချိန်   : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    input(f"\n{CYN}ပြန်ရန် Enter နှိပ်ပါ...{RST}")
 
 # 🏠 MAIN MENU
 def main():
@@ -164,23 +210,26 @@ def main():
         clear()
         net = get_net()
         print(f"{PUR}╭{h()}╮{RST}")
-        print(f"{PUR}│{RST}   {BD}{WHT}🚀 Ultimate VPN Key Finder{RST}{' '*(22)}{PUR}│{RST}")
-        print(f"{PUR}│{RST}      {DIM}— Dream Edition ✨{' '*(32)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}   {BD}{WHT}🚀 Ultimate VPN Key Finder{RST}{' '*(24)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}      {DIM}— Dream Edition ✨ v2.0{' '*(30)}{PUR}│{RST}")
         print(f"{PUR}├{h()}┤{RST}")
-        print(f"{PUR}│{RST}  📡 Network : {net}{' '*(42-len(net))}{PUR}│{RST}")
-        print(f"{PUR}│{RST}  📦 Sources : {len(SOURCES)}{' '*(44)}{PUR}│{RST}")
-        print(f"{PUR}│{RST}  🟦 VLESS   : {GRN}{len(vless)}{RST}{' '*(45-len(str(len(vless))))}{PUR}│{RST}")
-        print(f"{PUR}│{RST}  🟧 SS      : {ORG}{len(ss)}{RST}{' '*(45-len(str(len(ss))))}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  📡 လိုင်းအမျိုးအစား : {net}{' '*(42-len(net))}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  📦 ရင်းမြစ်အရေအတွက်: {len(SOURCES)}{' '*(44)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  🟦 VLESS Keys    : {BLU}{len(vless)}{RST}{' '*(45-len(str(len(vless))))}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  🟧 SS Keys       : {ORG}{len(ss)}{RST}{' '*(45-len(str(len(ss))))}{PUR}│{RST}")
         print(f"{PUR}├{h()}┤{RST}")
-        print(f"{PUR}│{RST}  {BD}ရွေးချယ်ရန်{RST}{' '*(44)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {BD}📌 ခလုတ်များကိုရွေးပါ{RST}{' '*(38)}{PUR}│{RST}")
         print(f"{PUR}├{h()}┤{RST}")
-        print(f"{PUR}│{RST}  {GRN}[ 1 ]{RST}  🔄 Sources အားလုံးဖတ်ရန်{' '*(34)}{PUR}│{RST}")
-        print(f"{PUR}│{RST}  {GRN}[ 2 ]{RST}  🟦 VLESS Keys စစ်ရန်{' '*(38)}{PUR}│{RST}")
-        print(f"{PUR}│{RST}  {GRN}[ 3 ]{RST}  🟧 SS Keys စစ်ရန်{' '*(42)}{PUR}│{RST}")
-        print(f"{PUR}│{RST}  {GRN}[ 4 ]{RST}  📄 သိမ်းထားသော Keys ကြည့်ရန်{' '*(32)}{PUR}│{RST}")
-        print(f"{PUR}│{RST}  {RED}[ 0 ]{RST}  ❌ ထွက်ရန်{' '*(44)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {GRN}[ 1 ]{RST}  🔄 အရင်းမြစ်အားလုံးဖတ်ရန်{' '*(36)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {BLU}[ 2 ]{RST}  🟦 VLESS Keys စစ်ပြီးအမြန်ဆုံးရန်{' '*(28)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {ORG}[ 3 ]{RST}  🟧 SS Keys စစ်ပြီးအမြန်ဆုံးရန်{' '*(32)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {CYN}[ 4 ]{RST}  🏆 ကျွန်ုပ့်လိုင်းနှင့်အကိုက်ညီဆုံးရှာရန်{' '*(22)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {YEL}[ 5 ]{RST}  📊 အချက်အလက်ကြည့်ရန်{' '*(36)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {PUR}[ 6 ]{RST}  📄 သိမ်းထားသော Keys ကြည့်ရန်{' '*(30)}{PUR}│{RST}")
+        print(f"{PUR}│{RST}  {RED}[ 0 ]{RST}  ❌ ပရိုဂရမ်မှထွက်ရန်{' '*(38)}{PUR}│{RST}")
         print(f"{PUR}╰{h()}╯{RST}")
-        ch = input(f"\n  {BD}ရွေးပါ → {RST}").strip()
+        ch = input(f"\n  {BD}ရွေးချယ်ပါ → {RST}").strip()
+        
         if ch == "0":
             clear()
             print(f"\n{PUR}✨ အသုံးပြုသည့်အတွက်ကျေးဇူးတင်ပါတယ် ✨{RST}")
@@ -190,10 +239,19 @@ def main():
             vless, ss = load_all()
             input(f"\n{CYN}ပြီးပါပြီ။ Enter နှိပ်ပါ...{RST}")
         elif ch == "2":
-            scan(vless, "VLESS")
+            results = scan_all(vless, "VLESS Keys")
+            show_results(results, "VLESS အကောင်းဆုံးများ")
+            input(f"\n{CYN}ပြန်ရန် Enter နှိပ်ပါ...{RST}")
         elif ch == "3":
-            scan(ss, "SS")
+            results = scan_all(ss, "SS Keys")
+            show_results(results, "SS အကောင်းဆုံးများ")
+            input(f"\n{CYN}ပြန်ရန် Enter နှိပ်ပါ...{RST}")
         elif ch == "4":
+            all_keys = vless + ss
+            find_best_match(all_keys)
+        elif ch == "5":
+            show_stats(vless, ss)
+        elif ch == "6":
             view_file()
         else:
             print(f"\n{RED}မှားနေပါတယ်၊ ပြန်ရွေးပါ{RST}")
