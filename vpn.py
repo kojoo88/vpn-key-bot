@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
+# ╔══════════════════════════════════════════════════════════╗
+# ║     🌟 ULTIMATE VPN KEY FINDER — DREAM EDITION           ║
+# ║   Smart Scan • Auto-Save • History • Favorites • Share    ║
+# ╚══════════════════════════════════════════════════════════╝
 import urllib.request, base64, os, socket, time, datetime, json
 
+# ─── 🎨 Theme Colors ───
 BLU = "\033[94m"
 CYN = "\033[96m"
 GRN = "\033[92m"
@@ -10,52 +15,38 @@ MAG = "\033[95m"
 BLD = "\033[1m"
 RST = "\033[0m"
 
+# ─── 📁 Data Files ───
 SAVE_VLESS = "best_vless.txt"
-SAVE_SS = "best_ss.txt"
-FAV_FILE = "favorites.json"
-HIST_FILE = "history.json"
-BAD_FILE = "bad_servers.json"
+SAVE_SS    = "best_ss.txt"
+FAV_FILE   = "favorites.json"
+HIST_FILE  = "history.json"
 
+# ─── 🌍 Country List ───
 COUNTRIES = {
-    "1": ("🇯🇵 Japan", ["JP", "Japan", "Tokyo"]),
-    "2": ("🇰🇷 Korea", ["KR", "Korea", "Seoul"]),
+    "1": ("🇯🇵 Japan",     ["JP", "Japan", "Tokyo"]),
+    "2": ("🇰🇷 Korea",     ["KR", "Korea", "Seoul"]),
     "3": ("🇸🇬 Singapore", ["SG", "Singapore", "Sin"]),
     "4": ("🇭🇰 Hong Kong", ["HK", "HongKong", "Hong"]),
-    "5": ("🇺🇸 USA", ["US", "USA", "United States"]),
-    "6": ("🇹🇭 Thailand", ["TH", "Thailand", "Bangkok"]),
+    "5": ("🇺🇸 USA",       ["US", "USA", "United States", "Los Angeles", "New York"]),
+    "6": ("🇹🇭 Thailand",  ["TH", "Thailand", "Bangkok"]),
     "7": ("🇲🇲 Best for MM", ["SG", "HK", "JP", "KR"]),
     "8": ("🌐 All Countries", []),
 }
 
-network_type = "Unknown"
-
 def clear(): os.system("clear")
-def line(n=60): return "═"*n
+def line(char="═", n=60): return char * n
 
 def header(subtitle=""):
     clear()
     print(f"{CYN}{BLD}╔{line()}╗{RST}")
-    print(f"{CYN}{BLD}║{RST}  🌟 VPN KEY FINDER", end="")
-    print(f"{' '*(35-len(subtitle))}{CYN}{BLD}║{RST}")
+    print(f"{CYN}{BLD}║{RST}  🌟 {MAG}{BLD}ULTIMATE VPN KEY FINDER{RST}", end="")
+    print(f"{' '*(28-len(subtitle))}{CYN}{BLD}║{RST}")
     if subtitle:
         print(f"{CYN}{BLD}║{RST}  {subtitle}{' '*(58-len(subtitle))}{CYN}{BLD}║{RST}")
     print(f"{CYN}{BLD}╠{line()}╣{RST}")
 
 def footer():
     print(f"{CYN}{BLD}╚{line()}╝{RST}")
-
-def detect_network():
-    global network_type
-    try:
-        import subprocess
-        r = subprocess.run(['ip', 'route'], capture_output=True, text=True, timeout=3)
-        if 'wlan' in r.stdout.lower() or 'wlp' in r.stdout.lower():
-            network_type = "📶 WiFi"
-        else:
-            network_type = "📱 Mobile Data"
-    except:
-        network_type = "📡 Unknown"
-    return network_type
 
 def ping_test(host, port):
     try:
@@ -65,27 +56,39 @@ def ping_test(host, port):
         s.connect((host, int(port)))
         ms = int((time.time() - start) * 1000)
         s.close()
-        if ms < 120: return f"{GRN}{ms}ms ✅", ms, 5
-        elif ms < 180: return f"{GRN}{ms}ms ✅", ms, 4
-        elif ms < 250: return f"{YEL}{ms}ms ⚡", ms, 3
-        elif ms < 400: return f"{YEL}{ms}ms ⚠️", ms, 2
-        else: return f"{RED}{ms}ms ❌", ms, 1
+        if ms < 80:    return f"{GRN}✨ {ms}ms    PERFECT{RST}", ms, 5
+        elif ms < 120: return f"{GRN}🌟 {ms}ms  EXCELLENT{RST}", ms, 5
+        elif ms < 180: return f"{GRN}✅ {ms}ms    GREAT{RST}", ms, 4
+        elif ms < 250: return f"{YEL}⚡ {ms}ms     GOOD{RST}", ms, 3
+        elif ms < 400: return f"{YEL}📍 {ms}ms     FAIR{RST}", ms, 2
+        else:          return f"{RED}⚠️ {ms}ms     SLOW{RST}", ms, 1
     except: return None, 9999, 0
 
 def fetch_url(url):
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            return r.read().decode("utf-8", errors="ignore")
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.read().decode("utf-8", errors="ignore")
     except: return None
 
 def extract_name(line):
-    if "#" not in line: return "Server"
+    if "#" not in line: return "Unknown Server"
     try:
         from urllib.parse import unquote
-        return unquote(line.split("#")[-1])[:35].strip()
+        return unquote(line.split("#")[-1])[:45].strip()
     except:
-        return line.split("#")[-1][:35].strip() or "Server"
+        return line.split("#")[-1][:45].strip() or "Unknown Server"
+
+def detect_country(name):
+    name_upper = name.upper()
+    for code, (label, keywords) in COUNTRIES.items():
+        for kw in keywords:
+            if kw.upper() in name_upper:
+                return label
+    return "🌍 Other"
 
 def parse_configs(text, fmt):
     keys = []
@@ -97,29 +100,64 @@ def parse_configs(text, fmt):
             line = line.strip()
             if not line or line.startswith("#"): continue
             name = extract_name(line)
+            country = detect_country(name)
             if line.startswith("vless://"):
-                keys.append({"proto": "VLESS", "name": name, "key": line, "ping": "--", "ms": 9999, "score": 0})
+                keys.append({"proto": "VLESS", "name": name, "country": country, 
+                            "key": line, "ping": "--", "ms": 9999, "score": 0, "time_found": ""})
             elif line.startswith("ss://"):
-                keys.append({"proto": "SS", "name": name, "key": line, "ping": "--", "ms": 9999, "score": 0})
+                keys.append({"proto": "SS", "name": name, "country": country, 
+                            "key": line, "ping": "--", "ms": 9999, "score": 0, "time_found": ""})
     except: pass
     return keys
-def get_bad_servers():
-    if not os.path.exists(BAD_FILE): return set()
-    try:
-        with open(BAD_FILE, "r", encoding="utf-8") as f:
-            return set(json.load(f))
-    except: return set()
 
-def save_results(proto, results):
+# ═══════════════════════════════════════════════════════════
+# 💾 SAVE & LOAD FUNCTIONS
+# ═══════════════════════════════════════════════════════════
+def save_results(proto, country_label, results, mode_label):
+    try:
+        fname = SAVE_VLESS if proto == "VLESS" else SAVE_SS
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(fname, "w", encoding="utf-8") as f:
+            f.write(f"{line()}\n")
+            f.write(f"  🏆 {mode_label}\n")
+            f.write(f"  🌍 Region: {country_label}\n")
+            f.write(f"  📅 Updated: {now}\n")
+            f.write(f"{line()}\n\n")
+            for idx, item in enumerate(results, 1):
+                stars = "⭐" * item["score"]
+                f.write(f"  [{idx}] {item['ping']}  {stars}\n")
+                f.write(f"      {item['country']} | {item['name']}\n")
+                f.write(f"      {item['key']}\n\n")
+        return True, fname, now
+    except: return False, "", ""
+
+def load_saved_data(proto):
     fname = SAVE_VLESS if proto == "VLESS" else SAVE_SS
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(fname, "w", encoding="utf-8") as f:
-        f.write(f"Updated: {now}\n")
-        f.write(f"Network: {network_type}\n\n")
-        for i, s in enumerate(results, 1):
-            stars = "⭐"*s["score"]
-            f.write(f"{i}. {s['ping']} {stars} {s['name']}\n{s['key']}\n\n")
-    return fname
+    if not os.path.exists(fname): return None, fname, ""
+    try:
+        with open(fname, "r", encoding="utf-8") as f:
+            return f.read(), fname, os.path.getmtime(fname)
+    except: return None, fname, ""
+
+def save_to_history(proto, country_label, results):
+    try:
+        history = []
+        if os.path.exists(HIST_FILE):
+            with open(HIST_FILE, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        entry = {
+            "time": now,
+            "proto": proto,
+            "country": country_label,
+            "count": len(results),
+            "top_ms": results[0]["ms"] if results else None
+        }
+        history.insert(0, entry)
+        history = history[:50]  # Keep last 50 records
+        with open(HIST_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    except: pass
 
 def get_favorites():
     if not os.path.exists(FAV_FILE): return []
@@ -128,178 +166,339 @@ def get_favorites():
             return json.load(f)
     except: return []
 
-def add_fav(server):
+def add_favorite(server):
     favs = get_favorites()
-    if any(f["key"]==server["key"] for f in favs):
-        return False, "ရှိပြီးသားပါ"
-    favs.insert(0, {"name":server["name"],"key":server["key"]})
+    key = server["key"]
+    if any(f["key"] == key for f in favs):
+        return False, "Already in favorites"
+    favs.insert(0, {
+        "name": server["name"],
+        "country": server["country"],
+        "key": key,
+        "added": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
     with open(FAV_FILE, "w", encoding="utf-8") as f:
-        json.dump(favs, f)
-    return True, "အကြိုက်ထဲထည့်ပြီး ✅"
+        json.dump(favs, f, ensure_ascii=False, indent=2)
+    return True, "Added to favorites ❤️"
 
-def load_sources():
+def remove_favorite(index):
+    favs = get_favorites()
+    if 0 <= index < len(favs):
+        del favs[index]
+        with open(FAV_FILE, "w", encoding="utf-8") as f:
+            json.dump(favs, f, ensure_ascii=False, indent=2)
+        return True, "Removed from favorites"
+    return False, "Invalid index"
+
+# ═══════════════════════════════════════════════════════════
+# 🔄 LOAD SOURCES
+# ═══════════════════════════════════════════════════════════
+def load_all_sources():
+    header("🔄 REFRESHING SERVER LIST...")
+    print(f"  📡 Reconnecting to server lists...\n")
+    
     sources = [
-        ("Shadowmere", "https://shadowmere.xyz/api/b64sub/", "b64"),
-        ("V2Ray-Vault", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Splitted-By-Protocol/vless.txt", "txt"),
+        ("Shadowmere",  "https://shadowmere.xyz/api/b64sub/",          "b64"),
+        ("V2Ray-Vault", "https://raw.githubusercontent.com/Argh73/V2Ray-Vault/main/data/sub/all_configs.txt", "txt"),
+        ("V2Nodes",     "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
     ]
-    vless, ss = [], []
-    bad = get_bad_servers()
+    
+    vless_list = []
+    ss_list = []
+    
     for name, url, fmt in sources:
+        print(f"    🔄 {name:<18}", end=" ")
         text = fetch_url(url)
         if text:
             keys = parse_configs(text, fmt)
-            keys = [k for k in keys if k["key"][:60] not in bad]
+            v_cnt = sum(1 for k in keys if k["proto"] == "VLESS")
+            s_cnt = sum(1 for k in keys if k["proto"] == "SS")
+            print(f"{GRN}✓{RST}  VLESS:{v_cnt}  SS:{s_cnt}")
             for k in keys:
-                if k["proto"]=="VLESS": vless.append(k)
-                else: ss.append(k)
-    return vless, ss
-
-def country_menu():
-    header("နိုင်ငံရွေးပါ")
-    for k,v in COUNTRIES.items():
-        print(f"  [{k}] {v[0]}")
-    print("  [0] ပယ်ဖျက်")
+                if k["proto"] == "VLESS": vless_list.append(k)
+                else: ss_list.append(k)
+        else:
+            print(f"{RED}✗{RST}")
+    
+    print(f"\n  ✅ Server list updated!  VLESS: {GRN}{len(vless_list)}{RST}  |  SS: {GRN}{len(ss_list)}{RST}\n")
     footer()
-    c = input("ရွေးပါ → ").strip()
-    if c=="0": return None, None
+    input("  Back → Enter")
+    return vless_list, ss_list
+
+def boot_loader():
+    header("LOADING SERVER SOURCES...")
+    print(f"  📡 Connecting to server lists...\n")
+    
+    sources = [
+        ("Shadowmere",  "https://shadowmere.xyz/api/b64sub/",          "b64"),
+        ("V2Ray-Vault", "https://raw.githubusercontent.com/Argh73/V2Ray-Vault/main/data/sub/all_configs.txt", "txt"),
+        ("V2Nodes",     "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
+    ]
+    
+    vless_list = []
+    ss_list = []
+    
+    for name, url, fmt in sources:
+        print(f"    🔄 {name:<18}", end=" ")
+        text = fetch_url(url)
+        if text:
+            keys = parse_configs(text, fmt)
+            v_cnt = sum(1 for k in keys if k["proto"] == "VLESS")
+            s_cnt = sum(1 for k in keys if k["proto"] == "SS")
+            print(f"{GRN}✓{RST}  VLESS:{v_cnt}  SS:{s_cnt}")
+            for k in keys:
+                if k["proto"] == "VLESS": vless_list.append(k)
+                else: ss_list.append(k)
+        else:
+            print(f"{RED}✗{RST}")
+    
+    print(f"\n  ✅ Welcome!  VLESS: {GRN}{len(vless_list)}{RST}  |  SS: {GRN}{len(ss_list)}{RST}\n")
+    footer()
+    time.sleep(1.5)
+    return vless_list, ss_list
+
+# ═══════════════════════════════════════════════════════════
+# 🌍 MENUS
+# ═══════════════════════════════════════════════════════════
+def country_filter_menu(proto):
+    header(f"🌍 SELECT COUNTRY — {proto}")
+    for k, v in COUNTRIES.items():
+        print(f"   [{k}] {v[0]}")
+    print(f"\n   [0] Cancel")
+    footer()
+    c = input(f"\n  {MAG}Choose Country → {RST}").strip()
+    
+    if c == "0": return None, None
     if c in COUNTRIES:
         return COUNTRIES[c][0], COUNTRIES[c][1]
     return None, None
 
 def filter_menu():
-    header("ရွေးချယ်မှု")
-    print("  [1] ⚡ အမြန်ဆုံး 10 ခု")
-    print("  [2] 🟢 တည်ငြိမ် (250ms အောက်)")
-    print("  [3] 📊 အားလုံးပြပါ")
-    print("  [0] ပယ်ဖျက်")
+    header("📊 SELECT SCAN MODE")
+    print(f"   [1] ⚡ FASTEST Top 10       — အမြန်ဆုံး 10 ခု")
+    print(f"   [2] 🟢 STABLE & GOOD        — တည်ငြိမ်+ကောင်း (250ms အောက်)")
+    print(f"   [3] 📊 SHOW ALL + QUALITY   — အကုန်ပြပြီး အဆင့်သတ်မှတ်")
+    print(f"   [4] 🎯 BEST FOR ME          — မြန်မာအတွက် အကောင်းဆုံး")
+    print(f"\n   [0] Cancel")
     footer()
-    c = input("ရွေးပါ → ").strip()
-    if c=="1": return "fastest"
-    if c=="2": return "stable"
-    if c=="3": return "all"
-    return None
+    c = input(f"\n  {MAG}Choose Mode → {RST}").strip()
+    
+    if c == "1": return "fastest", "⚡ FASTEST Top 10"
+    elif c == "2": return "stable", "🟢 STABLE & GOOD"
+    elif c == "3": return "all", "📊 SHOW ALL + QUALITY"
+    elif c == "4": return "bestforme", "🎯 BEST FOR ME (Myanmar)"
+    return None, None
 
-def scan(proto, all_keys, keywords, fmode):
-    header("စစ်ဆေးနေသည်...")
-    servers = [k for k in all_keys if k["proto"]==proto]
+def favorites_menu():
+    header("❤️ MY FAVORITES")
+    favs = get_favorites()
+    if not favs:
+        print(f"\n  {YEL}⚠️ No favorites yet!{RST}")
+        print(f"  Scan any server and add to favorites ❤️\n")
+    else:
+        for idx, item in enumerate(favs, 1):
+            print(f"  [{idx}] ❤️ {item['country']} | {item['name']}")
+            print(f"      {item['key']}\n")
+        print(f"  [del#] Remove from favorites (e.g. del1)")
+    print(f"  [0] Back")
+    footer()
+    c = input(f"\n  {MAG}Action → {RST}").strip().lower()
+    if c == "0": return
+    if c.startswith("del"):
+        try:
+            idx = int(c[3:]) - 1
+            ok, msg = remove_favorite(idx)
+            print(f"  {GRN}✓ {msg}{RST}\n")
+        except:
+            print(f"  {RED}⚠️ Invalid command{RST}\n")
+        time.sleep(1.5)
+
+def history_menu():
+    header("📈 SCAN HISTORY")
+    if not os.path.exists(HIST_FILE):
+        print(f"\n  {YEL}⚠️ No history yet!{RST}")
+        print(f"  Run a scan first to record history\n")
+    else:
+        with open(HIST_FILE, "r", encoding="utf-8") as f:
+            history = json.load(f)
+        if not history:
+            print(f"\n  {YEL}⚠️ No history yet!{RST}\n")
+        else:
+            print(f"  {'Time':<18} {'Proto':<6} {'Region':<20} {'Found':<6} {'Best':<8}")
+            print(f"  {line('-',58)}")
+            for item in history[:15]:
+                print(f"  {item['time']:<18} {item['proto']:<6} {item['country'][:18]:<20} {item['count']:<6} {item['top_ms']}ms")
+            print(f"\n  Showing last 15 of {len(history)} records\n")
+    print(f"  [0] Back")
+    footer()
+    input(f"\n  {MAG}Press Enter → Back{RST}")
+
+# ═══════════════════════════════════════════════════════════
+# 🔍 SCAN & DISPLAY
+# ═══════════════════════════════════════════════════════════
+def scan_and_filter(proto, all_keys, country_label, keywords, filter_mode, mode_label):
+    header(f"🔍 SCANNING {proto} — {country_label}")
+    
+    servers = [k for k in all_keys if k["proto"] == proto]
     if keywords:
         servers = [s for s in servers if any(kw.upper() in s["name"].upper() for kw in keywords)]
+    
     total = len(servers)
-    if total==0:
-        print("ဆာဗာမတွေ့ပါ")
+    if total == 0:
+        print(f"\n  {YEL}⚠️ No servers found for this region{RST}\n")
         footer()
-        input()
+        input("  Back → Enter")
         return
-    print(f"စုစုပေါင်း: {total} လုံး")
+    
+    print(f"  ⚠️  {YEL}IMPORTANT: First time using VPN? Connect to the fastest server first!{RST}\n")
+    print(f"  📦 Total: {BLU}{total}{RST} servers")
+    print(f"  🔄 Testing connection speed & quality...\n")
+    
     alive = []
-    for i, s in enumerate(servers, 1):
-        print(f"စစ်ဆေးနေသည်... {i}/{total}", end="\r")
+    start_time = time.time()
+    
+    for idx, svr in enumerate(servers, 1):
+        print(f"    [{idx}/{total}] {svr['country']} {svr['name'][:24]:<24}", end="\r")
         try:
             from urllib.parse import urlparse
-            p = urlparse(s["key"])
+            p = urlparse(svr["key"])
             ping_str, ms, score = ping_test(p.hostname, p.port)
             if ping_str:
-                s["ping"] = ping_str
-                s["ms"] = ms
-                s["score"] = score
-                alive.append(s)
+                svr["ping"] = ping_str
+                svr["ms"] = ms
+                svr["score"] = score
+                svr["time_found"] = datetime.datetime.now().strftime("%H:%M")
+                alive.append(svr.copy())
         except: pass
-    alive.sort(key=lambda x:x["ms"])
-    if fmode=="fastest": results = alive[:10]
-    elif fmode=="stable": results = [s for s in alive if s["ms"]<=250]
-    else: results = alive
-    header("ရလဒ်များ")
+    
+    elapsed = int(time.time() - start_time)
+    alive_sorted = sorted(alive, key=lambda x: x["ms"])
+    
+    # Apply filters
+    if filter_mode == "fastest":
+        results = alive_sorted[:10]
+    elif filter_mode == "stable":
+        results = [s for s in alive_sorted if s["ms"] <= 250]
+    elif filter_mode == "bestforme":
+        results = [s for s in alive_sorted if s["ms"] <= 300][:10]
+    else:
+        results = alive_sorted
+    
+    # Save history
+    save_to_history(proto, country_label, results)
+    
+    header(f"🏆 {mode_label}")
+    print(f"  ⚠️  {YEL}IMPORTANT: First time using VPN? Connect to the fastest server first!{RST}\n")
+    print(f"  📊 Scanned: {BLU}{total}{RST} | ✅ Online: {GRN}{len(alive)}{RST} | ✅ Selected: {MAG}{len(results)}{RST} | ⏱️ {elapsed}s\n")
+    
     if not results:
-        print("ကိုက်ညီသည့်ဆာဗာမရှိပါ")
+        print(f"  {RED}😢 No matching servers found{RST}\n")
         footer()
-        input()
+        input("  Back → Enter")
         return
-    for i, s in enumerate(results, 1):
-        stars = "⭐"*s["score"]
-        print(f"[{i}] {s['ping']} {stars}")
-        print(f"    {s['name']}")
-        print(f"    {s['key']}")
-        print(f"    f{i}=အကြိုက်ထည့်  c{i}=ကူးယူ")
-        print()
-    fname = save_results(proto, results)
-    print(f"ဖိုင်ထဲသိမ်းပြီး → {fname}")
+    
+    for idx, svr in enumerate(results, 1):
+        stars = "⭐" * svr["score"]
+        print(f"  {BLU}{BLD}[{idx:02d}]{RST}  {svr['ping']}  {stars}")
+        print(f"       {svr['country']}  {MAG}{svr['name']}{RST}")
+        print(f"       {svr['key']}")
+        print(f"       💡 [f{idx}] = Add to Favorites ❤️\n")
+    
+    print(f"  💾 Auto-saved to file")
+    print(f"  ➕ To add: type f1, f2, etc.  |  [0] Done\n")
+    footer()
+    
+    # Interactive: add to favorites
+    while True:
+        cmd = input(f"  {MAG}Action → {RST}").strip().lower()
+        if cmd == "0": break
+        if cmd.startswith("f") and cmd[1:].isdigit():
+            try:
+                idx = int(cmd[1:]) - 1
+                if 0 <= idx < len(results):
+                    ok, msg = add_favorite(results[idx])
+                    print(f"  {GRN}✓ {msg}{RST}\n")
+                else:
+                    print(f"  {RED}⚠️ Invalid number{RST}\n")
+            except:
+                print(f"  {RED}⚠️ Try again{RST}\n")
+    
+    # Save results to file
+    ok, fname, stamp = save_results(proto, country_label, results, mode_label)
+    if ok:
+        print(f"\n  💾 {GRN}✓ Saved to: {fname}{RST}")
+        print(f"  📅 Time: {stamp}{RST}")
     print()
     footer()
+
+def view_saved(proto):
+    content, fname, mtime = load_saved_data(proto)
+    header(f"📂 SAVED {proto} — Results")
+    print(f"  ⚠️  {YEL}IMPORTANT: First time using VPN? Connect to the fastest server first!{RST}\n")
+    if not content:
+        print(f"  {YEL}⚠️ No saved data yet!{RST}")
+        print(f"  First run: Scan & Filter\n")
+    else:
+        print(f"  📄 File: {fname}\n")
+        print(content)
+    footer()
+
+# ═══════════════════════════════════════════════════════════
+# 🏠 MAIN MENU
+# ═══════════════════════════════════════════════════════════
+def main():
+    vless_data, ss_data = boot_loader()
+    
     while True:
-        cmd = input("လုပ်ဆောင်ပါ (0=ပြန်) → ").strip().lower()
-        if cmd=="0": break
-        if cmd.startswith("f") and cmd[1:].isdigit():
-            idx = int(cmd[1:])-1
-            if 0<=idx<len(results):
-                ok, msg = add_fav(results[idx])
-                print(msg)
-        if cmd.startswith("c") and cmd[1:].isdigit():
-            idx = int(cmd[1:])-1
-            if 0<=idx<len(results):
-                print(f"\nကီးကို ကူးယူပါ 👇\n{results[idx]['key']}\n")
-        def main():
-    detect_network()
-    vless_data, ss_data = load_sources()
-    while True:
-        header("ပင်မမီနူး")
-        print(f"📡 လက်ရှိလိုင်း: {network_type}")
-        print()
-        print(" [1] 🌍 VLESS ရှာမည်")
-        print(" [2] 📂 VLESS ရလဒ်များကြည့်မည်")
-        print(" [3] ❤️ အကြိုက်ဆုံးများ")
-        print(" [4] 🔄 စာရင်းအသစ်ပြန်ဖတ်မည်")
-        print(" [5] 🌐 SS ရှာမည်")
-        print(" [6] 📂 SS ရလဒ်များကြည့်မည်")
-        print(" [0] ❌ ပိတ်မည်")
+        header("MAIN MENU")
+        print(f"  🟦 {BLU}VLESS SERVERS{RST}        🟧 {YEL}SS SERVERS{RST}")
+        print(f"  {line('-',16)}        {line('-',16)}")
+        print(f"   [1] 🌍 Scan VLESS        [5] 🌍 Scan SS")
+        print(f"   [2] 📂 View Saved VLESS   [6] 📂 View Saved SS")
+        print(f"  ═══ EXTRA FEATURES ═══")
+        print(f"   [3] ❤️  My Favorites      [7] 📈 Scan History")
+        print(f"   [4] 🔄 Refresh List       [0] ❌ Exit")
+        print(f"  {line('-',40)}")
         footer()
-        c = input("ရွေးပါ → ").strip()
         
-        if c=="0":
-            print("ဘေးကင်းစွာပြန်လာကြပါ 👋")
+        choice = input(f"\n  {MAG}Your choice → {RST}").strip()
+        
+        if choice == "0":
+            header("GOODBYE! 👋")
+            print(f"\n  Thank you for using 🌟 Ultimate VPN Key Finder — Dream Edition!")
+            print(f"  💡 Your best servers are always auto-saved")
+            print(f"  ❤️  Favorites & History keep your best connections safe\n")
+            footer()
             break
-        elif c=="1":
-            cl, kw = country_menu()
-            if cl:
-                fm = filter_menu()
-                if fm: scan("VLESS", vless_data, kw, fm)
-            input()
-        elif c=="2":
-            if os.path.exists(SAVE_VLESS):
-                with open(SAVE_VLESS, "r", encoding="utf-8") as f:
-                    print(f.read())
-            else:
-                print("ဖိုင်မရှိသေးပါ")
-            footer()
-            input()
-        elif c=="3":
-            favs = get_favorites()
-            header("အကြိုက်ဆုံးများ")
-            if not favs:
-                print("အကြိုက်မရှိသေးပါ")
-            else:
-                for i, fv in enumerate(favs,1):
-                    print(f"[{i}] {fv['name']}")
-                    print(f"    {fv['key']}\n")
-            footer()
-            input()
-        elif c=="4":
-            vless_data, ss_data = load_sources()
-            print("စာရင်းအသစ်ဖတ်ပြီး ✅")
+        elif choice == "1":
+            country_label, keywords = country_filter_menu("VLESS")
+            if country_label:
+                filter_mode, mode_label = filter_menu()
+                if filter_mode:
+                    scan_and_filter("VLESS", vless_data, country_label, keywords, filter_mode, mode_label)
+            input(f"\n  {MAG}Back → Menu{RST}")
+        elif choice == "2":
+            view_saved("VLESS")
+            input(f"\n  {MAG}Back → Menu{RST}")
+        elif choice == "3":
+            favorites_menu()
+        elif choice == "4":
+            vless_data, ss_data = load_all_sources()
+        elif choice == "5":
+            country_label, keywords = country_filter_menu("SS")
+            if country_label:
+                filter_mode, mode_label = filter_menu()
+                if filter_mode:
+                    scan_and_filter("SS", ss_data, country_label, keywords, filter_mode, mode_label)
+            input(f"\n  {MAG}Back → Menu{RST}")
+        elif choice == "6":
+            view_saved("SS")
+            input(f"\n  {MAG}Back → Menu{RST}")
+        elif choice == "7":
+            history_menu()
+        else:
+            print(f"\n  {RED}⚠️ Invalid choice!{RST}")
             time.sleep(1)
-        elif c=="5":
-            cl, kw = country_menu()
-            if cl:
-                fm = filter_menu()
-                if fm: scan("SS", ss_data, kw, fm)
-            input()
-        elif c=="6":
-            if os.path.exists(SAVE_SS):
-                with open(SAVE_SS, "r", encoding="utf-8") as f:
-                    print(f.read())
-            else:
-                print("ဖိုင်မရှိသေးပါ")
-            footer()
-            input()
 
 if __name__ == "__main__":
     main()
