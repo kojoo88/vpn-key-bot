@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # ==========================================================
-#    🚀 VPN Key Finder — Simple & Working Edition
+#    🚀 VPN Key Finder
+#    Sources: Only your 4 links
 # ==========================================================
 import urllib.request, base64, socket, time, os, datetime
 
@@ -15,13 +16,13 @@ def clear(): os.system("clear")
 def line(): return "=" * 50
 
 # ==========================================================
-# 🌐 WORKING SOURCES
+# 🌐 YOUR SOURCES - DO NOT CHANGE
 # ==========================================================
 SOURCES = [
-    # Pojiezhiyuanjun - GitHub Pages (Direct Access)
-    ("Pojie VLESS", "https://pojiezhiyuanjun.github.io/freev2/vless.txt", "txt"),
-    ("Pojie SS", "https://pojiezhiyuanjun.github.io/freev2/ss.txt", "txt"),
-    ("Pojie All", "https://pojiezhiyuanjun.github.io/freev2/all.txt", "txt"),
+    ("V2Nodes", "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
+    ("Shadowmere", "https://shadowmere.xyz/api/b64sub/", "b64"),
+    ("V2Ray-Vault", "https://raw.githubusercontent.com/Argh73/V2Ray-Vault/main/data/sub/all_configs.txt", "txt"),
+    ("V2Ray-Configs SS", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Splitted-By-Protocol/ss.txt", "txt"),
 ]
 
 # ==========================================================
@@ -50,7 +51,7 @@ def fetch(url):
         with urllib.request.urlopen(req, timeout=20) as r:
             return r.read().decode("utf-8", errors="ignore")
     except Exception as e:
-        print(f"  {RED}✗{RST} {url[:40]}... → Failed: {str(e)[:30]}")
+        print(f"  {RED}✗{RST} Failed: {str(e)[:40]}")
         return None
 
 def parse(text, fmt):
@@ -107,7 +108,7 @@ def ping_test(url):
 def load_all():
     all_vless = []
     all_ss = []
-    print(f"\n{BLU}🔄 Loading sources...{RST}\n")
+    print(f"\n{BLU}🔄 Loading {len(SOURCES)} sources...{RST}\n")
     for name, url, fmt in SOURCES:
         print(f"  {name:<20}", end=" ")
         text = fetch(url)
@@ -138,7 +139,7 @@ def show_results(keys):
     print(f"\n{BLU}Testing {len(keys)} servers...{RST}\n")
     
     for i, k in enumerate(keys, 1):
-        print(f"  [{i}/{len(keys)}] {k['name'][:30]:<35}", end="\r")
+        print(f"  [{i}/{len(keys)}] {k['name'][:35]:<35}", end="\r")
         ok, ms, rating = ping_test(k["url"])
         if ok:
             k["ms"] = ms
@@ -156,7 +157,6 @@ def show_results(keys):
         print(f"      📌 {k['name']}")
         print(f"      🔑 {k['url']}\n")
     
-    # Save to file
     with open("working_keys.txt", "w", encoding="utf-8") as f:
         f.write(f"Updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Network: {get_network_type()}\n")
@@ -177,7 +177,7 @@ def main():
     while True:
         clear()
         print(f"{BLU}{line()}{RST}")
-        print(f"  🚀 VPN Key Finder — Simple Edition")
+        print(f"  🚀 VPN Key Finder")
         print(f"{BLU}{line()}{RST}")
         print(f"  📡 Network: {network}")
         print(f"  📦 Sources: {len(SOURCES)}")
@@ -186,7 +186,7 @@ def main():
             print(f"  🟧 SS:    {len(ss_data)} keys")
         print(f"{BLU}{line()}{RST}\n")
         
-        print("  [1] 🔄 Load All Sources First")
+        print("  [1] 🔄 Load All Sources")
         print("  [2] 🟦 Find & Test VLESS Keys")
         print("  [3] 🟧 Find & Test SS Keys")
         print("  [4] 📄 View Saved Keys")
@@ -196,12 +196,12 @@ def main():
         choice = input("  Choose → ").strip()
         
         if choice == "0":
-            print("\n  👋 Goodbye! Stay safe! ✨\n")
+            print("\n  👋 Goodbye! ✨\n")
             break
         
         elif choice == "1":
             vless_data, ss_data = load_all()
-            input("\n  Done! Press Enter to continue...")
+            input("\n  Done! Press Enter...")
         
         elif choice == "2":
             if not vless_data:
@@ -234,4 +234,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-            
+        
