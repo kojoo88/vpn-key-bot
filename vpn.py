@@ -3,7 +3,7 @@
 import urllib.request, base64, os, socket, time, json, sys
 from datetime import datetime
 
-VERSION = "🌏 ALL-SOURCES EDITION v8.4"
+VERSION = "🌏 ALL-SOURCES EDITION v8.5"
 FAV_FILE = os.path.expanduser("~/.vpn_eternal.json")
 FACEBOOK_LINK = "https://www.facebook.com/share/18jrazYpmS/"
 
@@ -16,39 +16,21 @@ class C:
     W = "\033[38;5;255m"
     A = "\033[38;5;172m"
     N = "\033[38;5;234m"
+    M = "\033[38;5;201m"
     RESET = "\033[0m"
     B = "\033[1m"
 
 def clear(): os.system("clear")
-def title():
+
+def title_banner():
     clear()
-    print(f"""{C.G}
-╔═══════════════════════════════════════════════════╗
-║     {C.B}🌏 ALL-SOURCES EDITION v8.4 🌏{C.RESET}{C.G}                    ║
-║   VLESS / SS / VMESS / TROJAN — တစ်ပြိုင်နက်ရှာဖွေခြင်း     ║
-╚═══════════════════════════════════════════════════╝{C.RESET}""")
-    print(f"  🕐 {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"  📘 Facebook: {FACEBOOK_LINK}\n")
-
-def load_fav():
-    if os.path.exists(FAV_FILE):
-        try: return json.load(open(FAV_FILE))
-        except: return []
-    return []
-
-def save_fav(item):
-    favs = load_fav()
-    if any(f["key"]==item["key"] for f in favs): return False
-    favs.insert(0, {"name":item["name"],"key":item["key"],"proto":item["proto"],"saved_at":datetime.now().strftime("%Y-%m-%d %H:%M")})
-    json.dump(favs, open(FAV_FILE,"w"), ensure_ascii=False, indent=2)
-    return True
-
-def copy_t(text):
-    try:
-        import subprocess
-        subprocess.run(["termux-clipboard-set", text])
-        return True
-    except: return False
+    print(f"""{C.M}{C.B}
+╔═══════════════════════════════════════════════════════════════════╗
+║     🚀  {C.B}ALL-SOURCES EDITION v8.5{C.RESET}{C.M}                              ║
+║   ⚡ VLESS / SS / VMESS / TROJAN — Fast VPN Key Finder             ║
+╚═══════════════════════════════════════════════════════════════════╝{C.RESET}""")
+    print(f"  🕐 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  📘 {C.S}Facebook:{C.RESET} {FACEBOOK_LINK}\n")
 
 SOURCES = [
     ("Shadowmere API", "https://shadowmere.xyz/api/b64sub/", "b64"),
@@ -117,12 +99,12 @@ def ping(host, port=443):
 
 def flag(name):
     n = name.lower()
-    if "singapore" in n or "sg " in n or "sg-" in n: return "🇸🇬 SG"
-    if "malaysia" in n or "my " in n or "my-" in n: return "🇲🇾 MY"
-    if "thai" in n or "th " in n or "th-" in n: return "🇹🇭 TH"
-    if "hongkong" in n or "hk " in n or "hk-" in n: return "🇭🇰 HK"
-    if "japan" in n or "jp " in n or "jp-" in n: return "🇯🇵 JP"
-    if "korea" in n or "kr " in n or "kr-" in n: return "🇰🇷 KR"
+    if "singapore" in n or "sg " in n: return "🇸🇬 SG"
+    if "malaysia" in n or "my " in n: return "🇲🇾 MY"
+    if "thai" in n or "th " in n: return "🇹🇭 TH"
+    if "hongkong" in n or "hk " in n: return "🇭🇰 HK"
+    if "japan" in n or "jp " in n: return "🇯🇵 JP"
+    if "korea" in n or "kr " in n: return "🇰🇷 KR"
     if "vietnam" in n or "vn " in n: return "🇻🇳 VN"
     if "uk" in n or "gb" in n or "london" in n: return "🇬🇧 GB"
     if "finland" in n or "fi " in n: return "🇫🇮 FI"
@@ -139,41 +121,30 @@ def flag(name):
 def rank(ms):
     if ms == 9999: return f"{C.R}✖ OFFLINE{C.RESET}"
     ms = int(ms)
-    if ms < 60: return f"{C.G}👑 S-TIER {C.E}●{ms}ms{C.RESET}"
-    if ms < 100: return f"{C.D}💎 A-TIER {C.S}●{ms}ms{C.RESET}"
-    if ms < 180: return f"{C.W}⭐ B-TIER {C.A}●{ms}ms{C.RESET}"
-    if ms < 300: return f"{C.A}⚡ C-TIER {C.A}●{ms}ms{C.RESET}"
-    return f"{C.N}⚠ D-TIER {C.R}●{ms}ms{C.RESET}"
+    if ms < 60: return f"{C.G}👑 S-TIER {C.E}{ms}ms{C.RESET}"
+    if ms < 100: return f"{C.D}💎 A-TIER {C.S}{ms}ms{C.RESET}"
+    if ms < 180: return f"{C.W}⭐ B-TIER {C.A}{ms}ms{C.RESET}"
+    if ms < 300: return f"{C.A}⚡ C-TIER {ms}ms{C.RESET}"
+    return f"{C.N}⚠ D-TIER {C.R}{ms}ms{C.RESET}"
 
-def load_keys():
+def load_keys_silent():
     all_keys = []
     seen = set()
-    title()
-    print(f"  {C.S}📡 အရင်းအမြစ် {len(SOURCES)} ခုမှ ကီးများရယူနေသည်...{C.RESET}\n")
     success = 0
-    for idx, (name, url, t) in enumerate(SOURCES, 1):
-        print(f"  [{idx:02d}/{len(SOURCES)}] ▸ {name[:25]:<25}...", end=" ", flush=True)
+    for name, url, t in SOURCES:
         c = fetch((name, url, t))
         if c:
             ks = parse(c, t)
-            cnt=0
             for k in ks:
                 if k["key"] not in seen:
                     seen.add(k["key"])
                     all_keys.append(k)
-                    cnt+=1
-            print(f"{C.E}✓ {cnt:>3d} ခု{C.RESET}")
             success += 1
-        else:
-            print(f"{C.R}✖ မရရှိ{C.RESET}")
-        time.sleep(0.1)
-    print(f"\n  {C.G}✨ အလုပ်လုပ်သောအရင်းအမြစ်: {success}/{len(SOURCES)}  │  စုစုပေါင်းကီး: {len(all_keys)} ခု{C.RESET}\n")
-    time.sleep(1)
-    return all_keys
+    return all_keys, success
 
 def scan_best(keys, limit=30):
-    title()
-    print(f"  {C.S}⚡ အလျင်မြန်ဆုံး ၅ ခုကို ရွေးချယ်နေသည်...{C.RESET}\n")
+    title_banner()
+    print(f"  {C.S}⚡ စကင်န်ဖတ်နေသည်... ကျေးဇူးပြု၍ စောင့်ပါ{C.RESET}\n")
     res = []
     total = min(len(keys), limit)
     for i in range(total):
@@ -183,224 +154,179 @@ def scan_best(keys, limit=30):
         res.append({"name":k["name"],"key":k["key"],"proto":k["proto"],"ms":ms})
         pct = int((i+1)/total*100)
         bar = "█"*int(pct/5)+"░"*(20-int(pct/5))
-        print(f"\r  [{bar}] {pct:>3}%  ({i+1}/{total})", end="", flush=True)
+        print(f"\r  [{bar}] {pct:>3}%", end="", flush=True)
     print("\n")
     res.sort(key=lambda x:x["ms"])
     return [r for r in res if int(r["ms"]) < 500]
 
-def show_list(data, title_text):
+def show_and_copy(data, title_text, count=5):
     if not data:
         print(f"  {C.R}မတွေ့ပါ။ ပြန်ကြိုးစားပါ။{C.RESET}\n")
+        input(f"  ပြန်ရန် Enter...")
         return
-    print(f"  {C.G}{title_text}  ({len(data)} ခု){C.RESET}")
-    print(f"  ┌──┬─────────┬──────────────────┬──────────┬──────────────────────────────────────────────┐")
-    print(f"  │# │ နိုင်ငံ  │ အဆင့်            │ ပရိုတိုကော │ အမည်                                                │")
-    print(f"  ├──┼─────────┼──────────────────┼──────────┼──────────────────────────────────────────────┤")
-    for i,r in enumerate(data,1):
-        proto_icon = {"VLESS":"🟦","SS":"🟩","VMESS":"🟧","TROJAN":"🟪"}.get(r["proto"],"⬜")
-        print(f"  │{i:<2}│ {flag(r['name']):<7} │ {rank(r['ms']):<16} │ {proto_icon} {r['proto']:<6} │ {r['name'][:45]:<45} │")
-    print(f"  └──┴─────────┴──────────────────┴──────────┴──────────────────────────────────────────────┘\n")
-
-def usage_guide():
-    print(f"""{C.G}
-╔══════════════════════════════════════════════════════════════════════════╗
-║                  📘 VLESS KEY သုံးနည်း လမ်းညွှန်                          ║
-╠══════════════════════════════════════════════════════════════════════════╣
-║                                                                          ║
-║  📱 ဖုန်းအက်ပ်များ:                                                      ║
-║  ────────────────────────────────────────────────────────────────────   ║
-║  • V2RayNG      → Play Store မှဒေါင်းလုဒ် → + → ကလစ်ဘုတ်မှထည့်သွင်း      ║
-║  • NekoBox      → Play Store မှဒေါင်းလုဒ် → + → ကလစ်ဘုတ်မှထည့်သွင်း      ║
-║  • NekoRay      → Play Store မှဒေါင်းလုဒ် → + → ကလစ်ဘုတ်မှထည့်သွင်း      ║
-║  • V2Box        → Play Store မှဒေါင်းလုဒ် → + → ကလစ်ဘုတ်မှထည့်သွင်း      ║
-║                                                                          ║
-║  💻 ကွန်ပျူတာအက်ပ်များ:                                                  ║
-║  ────────────────────────────────────────────────────────────────────   ║
-║  • v2rayN       → Windows → Ctrl+V ဖြင့်ကူးထည့်ပါ                        ║
-║  • Clash Verge  → Windows/Mac → အသစ်ဖန်တီး → ကူးထည့်ပါ                  ║
-║  • Hiddify      → Windows/Mac → + → From Clipboard                       ║
-║                                                                          ║
-║  ✅ အဆင့်များ:                                                           ║
-║  ────────────────────────────────────────────────────────────────────   ║
-║  ၁။ ကီးကို ကလစ်ဘုတ်သို့ ကူးယူပါ (ပရိုဂရမ်တွင် Auto-copy လုပ်ပြီးသား)         ║
-║  ၂။ V2RayNG / NekoBox ကိုဖွင့်ပါ                                          ║
-║  ၃။ ညာဘက်အပေါ်က + ခလုတ်ကို နှိပ်ပါ                                       ║
-║  ၄။ "Import from Clipboard" ကို ရွေးပါ                                   ║
-║  ၅။ ဆာဗာအသစ်ပေါ်လာမည် → နှိပ်ပြီး Connect လုပ်ပါ ✅                      ║
-║                                                                          ║
-║  💡 အကြံပြုချက်- 🇸🇬 စင်ကာပူဆာဗာသည် မြန်မာအတွက် အမြန်ဆုံးဖြစ်သည်။          ║
-║                                                                          ║
-║  📘 နောက်ထပ်သိူလိုပါက Facebook တွင်ဝင်ရောက်ကြည့်ပါ:                       ║
-║     {FACEBOOK_LINK:<68}║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝{C.RESET}
-""")
-
-def copy_top(data, n=5):
-    if not data: return
-    top = data[:n]
-    keys_text = "\n".join([r["key"] for r in top])
     
-    print(f"\n{C.G}{'═'*75}{C.RESET}")
-    print(f"{C.G}🏆 အလျင်မြန်ဆုံး {len(top)} ခု — ကီးအပြည့်အစုံ{C.RESET}")
-    print(f"{C.G}{'═'*75}{C.RESET}\n")
+    top = data[:count]
+    print(f"  {C.M}{C.B}╔════════════════════════════════════════════════════════╗{C.RESET}")
+    print(f"  {C.M}{C.B}║  ✅ {title_text} — အကောင်းဆုံး {count} ခု{C.RESET}{' '*(32-len(title_text))}{C.M}║{C.RESET}")
+    print(f"  {C.M}{C.B}╚════════════════════════════════════════════════════════╝{C.RESET}\n")
     
     for idx, r in enumerate(top, 1):
         proto_icon = {"VLESS":"🟦","SS":"🟩","VMESS":"🟧","TROJAN":"🟪"}.get(r["proto"],"⬜")
-        print(f"{C.S}┌── ဆာဗာ {idx}/{len(top)} ───────────────────────────────────────────────{C.RESET}")
-        print(f"  {C.W}နိုင်ငံ:{C.RESET} {flag(r['name'])}   {C.W}အဆင့်:{C.RESET} {rank(r['ms'])}")
-        print(f"  {C.W}အမည်:{C.RESET} {r['name']}")
-        print(f"  {C.W}ပရိုတိုကော:{C.RESET} {proto_icon} {r['proto']}")
-        print(f"  {C.W}ကီး:{C.RESET}")
-        print(f"  {r['key']}")
-        print()
+        print(f"  {C.B}▸ ဆာဗာ {idx}/{count}{C.RESET}")
+        print(f"    {C.W}နိုင်ငံ:{C.RESET} {flag(r['name'])}   {C.W}အမြန်နှုန်း:{C.RESET} {rank(r['ms'])}")
+        print(f"    {C.W}အမည်:{C.RESET} {r['name'][:50]}")
+        print(f"    {C.W}ပရိုတိုကော:{C.RESET} {proto_icon} {r['proto']}")
+        print(f"    {C.W}ကီး:{C.RESET}")
+        print(f"    {C.S}{r['key']}{C.RESET}\n")
     
-    ok = copy_t(keys_text)
-    print(f"{C.G}{'═'*75}{C.RESET}")
-    if ok:
-        print(f"  {C.E}✅ ကလစ်ဘုတ်သို့ အကုန်ကူးယူပြီးပါပြီ!{C.RESET}")
-    else:
-        print(f"  {C.A}⚠️ အထက်က ကီးများကို ကိုယ်တိုင်အပြည့်အဝကူးယူပါ{C.RESET}")
+    all_keys_text = "\n".join([r["key"] for r in top])
+    try:
+        import subprocess
+        subprocess.run(["termux-clipboard-set", all_keys_text])
+        print(f"  {C.E}✅ ကီးအားလုံး ကလစ်ဘုတ်သို့ ကူးယူပြီးပါပြီ!{C.RESET}\n")
+    except:
+        print(f"  {C.A}⚠️ အထက်က ကီးများကို ကိုယ်တိုင်ကူးယူပါ{C.RESET}\n")
     
-    print()
-    usage_guide()
-    
-    print(f"\n{C.G}📘 Facebook အပိုအကူအညီ: {FACEBOOK_LINK}{C.RESET}\n")
-    return top
+    usage_guide_short()
+    input(f"  ပင်မမီနူးသို့ ပြန်ရန် Enter...")
+
+def usage_guide_short():
+    print(f"  {C.M}📘 VLESS Key သုံးနည်း{C.RESET}")
+    print(f"  ────────────────────────────────────────────────")
+    print(f"  ၁။ V2RayNG / NekoBox ကိုဖွင့်ပါ")
+    print(f"  ၂။ ညာဘက်အပေါ် + → Import from Clipboard")
+    print(f"  ၃။ ဆာဗာကိုနှိပ်ပြီး Connect လုပ်ပါ ✅")
+    print(f"  📘 အသေးစိတ်: {FACEBOOK_LINK}")
+    print(f"  ────────────────────────────────────────────────\n")
 
 def fav_menu():
     while True:
-        title()
-        favs = load_fav()
-        if not favs:
-            print(f"  {C.A}အကြိုက်ဆုံး မရှိသေးပါ။ ကီးတစ်ခုရွေးပြီး သိမ်းထားနိုင်ပါတယ်။{C.RESET}\n")
+        title_banner()
+        if not os.path.exists(FAV_FILE):
+            favs = []
         else:
-            print(f"  {C.G}⭐ အကြိုက်ဆုံး ({len(favs)} ခု){C.RESET}")
-            print(f"  ┌──┬─────────┬──────────┬───────────────────────────────────────────────┬──────────────┐")
-            print(f"  │# │ နိုင်ငံ  │ ပရိုတိုကော │ အမည်                                                │ သိမ်းခဲ့စဉ်   │")
-            print(f"  ├──┼─────────┼──────────┼───────────────────────────────────────────────┼──────────────┤")
-            for i,f in enumerate(favs,1):
-                proto_icon = {"VLESS":"🟦","SS":"🟩","VMESS":"🟧","TROJAN":"🟪"}.get(f["proto"],"⬜")
-                print(f"  │{i:<2}│ {flag(f['name']):<7} │ {proto_icon} {f['proto']:<6} │ {f['name'][:45]:<45} │ {f['saved_at']:<12} │")
-            print(f"  └──┴─────────┴──────────┴───────────────────────────────────────────────┴──────────────┘")
-            print(f"  နံပါတ်ထည့်ပါ = ကီးအပြည့်အစုံကူးယူမည်")
-        print(f"  0 = ပင်မမီနူး")
-        print(f"  📘 Facebook: {FACEBOOK_LINK}")
-        sel = input(f"\n  {C.S}ရွေးချယ်ပါ → {C.RESET}").strip()
-        if sel=="0": break
+            try: favs = json.load(open(FAV_FILE))
+            except: favs = []
+        
+        print(f"  {C.M}{C.B}⭐ အကြိုက်ဆုံးဆာဗာများ{C.RESET} ({len(favs)} ခု)\n")
+        if not favs:
+            print(f"  {C.A}အကြိုက်ဆုံး မရှိသေးပါ။ ကီးရပါက သိမ်းထားနိုင်ပါတယ်။{C.RESET}\n")
+        else:
+            for i, f in enumerate(favs, 1):
+                print(f"  [{i}] {flag(f['name'])} | {f['name'][:40]}")
+            print(f"  နံပါတ်ထည့်ပါ = ကီးကူးယူမည်")
+        print(f"  [0] ပင်မမီနူးသို့ ပြန်မည်\n")
+        sel = input(f"  {C.S}ရွေးချယ်ပါ → {C.RESET}").strip()
+        if sel == "0": break
         if sel.isdigit() and favs:
             idx = int(sel)-1
-            if 0<=idx<len(favs):
-                key_data = favs[idx]["key"]
-                copy_t(key_data)
-                print(f"\n  {C.G}ကီးအပြည့်အစုံ:{C.RESET}")
-                print(f"  {key_data}")
-                print(f"\n  {C.E}✅ ကူးယူပြီးပါပြီ!{C.RESET}\n")
-                usage_guide()
-                time.sleep(2)
+            if 0 <= idx < len(favs):
+                print(f"\n  {favs[idx]['key']}\n")
+                try:
+                    import subprocess
+                    subprocess.run(["termux-clipboard-set", favs[idx]["key"]])
+                    print(f"  {C.E}✅ ကူးယူပြီးပါပြီ!{C.RESET}\n")
+                except: pass
+                input(f"  ပြန်ရန် Enter...")
 
-def main():
-    all_keys = load_keys()
+def main_menu(all_keys):
     vless = [k for k in all_keys if k["proto"]=="VLESS"]
     ss = [k for k in all_keys if k["proto"]=="SS"]
     vmess = [k for k in all_keys if k["proto"]=="VMESS"]
     trojan = [k for k in all_keys if k["proto"]=="TROJAN"]
     
     while True:
-        title()
-        print(f"  🟦 VLESS: {len(vless)}  │  🟩 SS: {len(ss)}  │  🟧 VMESS: {len(vmess)}  │  🟪 TROJAN: {len(trojan)}")
-        print(f"\n  {C.G}ပင်မမီနူး{C.RESET}")
-        print(f"  ─────────────────────────────────────────────────────")
-        print(f"  [1] ⚡ VLESS သီးသန့် အလျင်မြန်ဆုံး ၅ ခု ရှာမည်")
-        print(f"  [2] 🟩 SS သီးသန့် အလျင်မြန်ဆုံး ၅ ခု ရှာမည်")
-        print(f"  [3] 🏆 အားလုံးရောပြီး အလျင်မြန်ဆုံး ၅ ခု ရှာမည်   {C.E}◀ အသစ်ထည့်ပေးထားသည်{C.RESET}")
-        print(f"  [4] 🇸🇬 အာရှဆာဗာများသာ အလျင်မြန်ဆုံး ၅ ခု ရှာမည်")
-        print(f"  [5] ⭐ အကြိုက်ဆုံးဆာဗာများ")
-        print(f"  [6] 📘 VLESS Key သုံးနည်း လမ်းညွှန်")
-        print(f"  [7] 🔄 ကီးအသစ်ပြန်ဖတ်မည်")
-        print(f"  [0] ✖ ပရိုဂရမ်မှထွက်မည်")
-        print(f"\n  📘 Facebook: {FACEBOOK_LINK}")
-        sel = input(f"\n  {C.S}ရွေးချယ်ပါ → {C.RESET}").strip()
+        title_banner()
+        print(f"  {C.M}{C.B}📊 စာရင်းအင်း{C.RESET}")
+        print(f"  ┌────────────┬──────────────────────────────┐")
+        print(f"  │  🟦 VLESS  │  {len(vless):>4} ခု                     │")
+        print(f"  │  🟩 SS     │  {len(ss):>4} ခု                     │")
+        print(f"  │  🟧 VMESS  │  {len(vmess):>4} ခု                     │")
+        print(f"  │  🟪 TROJAN │  {len(trojan):>4} ခု                     │")
+        print(f"  │  📦 စုစုပေါင်း │  {len(all_keys):>4} ခု                     │")
+        print(f"  └────────────┴──────────────────────────────┘\n")
         
-        if sel=="1":
+        print(f"  {C.M}{C.B}🎯 ပင်မမီနူး{C.RESET}")
+        print(f"  ┌──────────────────────────────────────────────────────┐")
+        print(f"  │  [1] ⚡ VLESS  အမြန်ဆုံး ၅ ခု  │  [2] 🟩 SS  အမြန်ဆုံး ၅ ခု     │")
+        print(f"  │  [3] 🏆 အားလုံး  အမြန်ဆုံး ၅ ခု  │  [4] 🇸🇬 အာရှဆာဗာများသာ       │")
+        print(f"  │  [5] ⭐ အကြိုက်ဆုံးဆာဗာများ      │  [6] 🔄 ကီးအသစ်ပြန်ဖတ်မည်     │")
+        print(f"  │  [0] ✖ ပရိုဂရမ်မှထွက်မည်      │                          │")
+        print(f"  └──────────────────────────────────────────────────────┘\n")
+        
+        sel = input(f"  {C.S}{C.B}ရွေးချယ်ပါ → {C.RESET}").strip()
+        
+        if sel == "1":
             if not vless:
-                print(f"  {C.A}VLESS ကီးမရှိပါ{C.RESET}\n")
-                time.sleep(1)
+                print(f"  {C.A}VLESS ကီးမရှိပါ။ [6] ကိုနှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
+                time.sleep(1.5)
                 continue
             data = scan_best(vless)
-            show_list(data[:5], "⚡ VLESS အမြန်ဆုံး")
-            if data: copy_top(data,5)
-            input(f"  ပြန်ရန် Enter...")
+            show_and_copy(data, "🟦 VLESS အမြန်ဆုံး", 5)
         
-        elif sel=="2":
+        elif sel == "2":
             if not ss:
-                print(f"  {C.A}SS ကီးမရှိပါ{C.RESET}\n")
-                time.sleep(1)
+                print(f"  {C.A}SS ကီးမရှိပါ။ [6] ကိုနှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
+                time.sleep(1.5)
                 continue
             data = scan_best(ss)
-            show_list(data[:5], "🟩 SS အမြန်ဆုံး")
-            if data: copy_top(data,5)
-            input(f"  ပြန်ရန် Enter...")
+            show_and_copy(data, "🟩 SS အမြန်ဆုံး", 5)
         
-        elif sel=="3":
+        elif sel == "3":
             if not all_keys:
-                print(f"  {C.A}ကီးမရှိပါ။ အရင်ပြန်ဖတ်ပါ{C.RESET}\n")
-                time.sleep(1)
+                print(f"  {C.A}ကီးမရှိပါ။ [6] ကိုနှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
+                time.sleep(1.5)
                 continue
-            data = scan_best(all_keys, limit=30)
-            show_list(data[:5], "🏆 အားလုံးထဲမှ အမြန်ဆုံး")
-            if data: copy_top(data,5)
-            input(f"  ပြန်ရန် Enter...")
+            data = scan_best(all_keys)
+            show_and_copy(data, "🏆 အားလုံးထဲမှ အမြန်ဆုံး", 5)
         
-        elif sel=="4":
+        elif sel == "4":
             if not all_keys:
-                print(f"  {C.A}ကီးမရှိပါ။ အရင်ပြန်ဖတ်ပါ{C.RESET}\n")
-                time.sleep(1)
+                print(f"  {C.A}ကီးမရှိပါ။ [6] ကိုနှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
+                time.sleep(1.5)
                 continue
-            asia = []
             asia_flags = ["🇸🇬", "🇲🇾", "🇹🇭", "🇭🇰", "🇯🇵", "🇰🇷", "🇻🇳", "🇮🇳"]
-            for k in all_keys:
-                f = flag(k["name"])
-                if any(a in f for a in asia_flags):
-                    asia.append(k)
+            asia = [k for k in all_keys if any(a in flag(k["name"]) for a in asia_flags)]
             if not asia:
                 print(f"  {C.A}အာရှဆာဗာ မတွေ့ပါ။ အားလုံးကိုပြပါမည်။{C.RESET}\n")
                 asia = all_keys
-            data = scan_best(asia, limit=20)
-            show_list(data[:5], "🇸🇬 အာရှဆာဗာများ အမြန်ဆုံး")
-            if data: copy_top(data,5)
-            input(f"  ပြန်ရန် Enter...")
+            data = scan_best(asia)
+            show_and_copy(data, "🇸🇬 အာရှဆာဗာများ အမြန်ဆုံး", 5)
         
-        elif sel=="5":
+        elif sel == "5":
             fav_menu()
         
-        elif sel=="6":
-            title()
-            usage_guide()
-            input(f"  ပြန်ရန် Enter...")
-        
-        elif sel=="7":
-            all_keys = load_keys()
+        elif sel == "6":
+            title_banner()
+            print(f"  {C.S}🔄 ကီးအသစ်ပြန်ဖတ်နေသည်...{C.RESET}\n")
+            all_keys, _ = load_keys_silent()
             vless = [k for k in all_keys if k["proto"]=="VLESS"]
             ss = [k for k in all_keys if k["proto"]=="SS"]
             vmess = [k for k in all_keys if k["proto"]=="VMESS"]
             trojan = [k for k in all_keys if k["proto"]=="TROJAN"]
+            print(f"  {C.E}✅ အသစ်ဖတ်ပြီးပါပြီ! စုစုပေါင်း: {len(all_keys)} ခု{C.RESET}\n")
+            time.sleep(1.2)
         
-        elif sel=="0":
-            title()
-            print(f"  {C.G}✨ ကျေးဇူးပါ! အကောင်းဆုံးဆာဗာရှာနိုင်ပါစေ ✨{C.RESET}")
+        elif sel == "0":
+            title_banner()
+            print(f"  {C.M}{C.B}✨ ကျေးဇူးပါ! အကောင်းဆုံးဆာဗာရှာနိုင်ပါစေ ✨{C.RESET}")
             print(f"  📘 Facebook: {FACEBOOK_LINK}\n")
-            break
+            sys.exit(0)
         
         else:
-            print(f"  {C.R}မှားနေပါတယ် 0-7 ကြားသာထည့်ပါ{C.RESET}\n")
+            print(f"  {C.R}မှားနေပါတယ် 0-6 ကြားသာထည့်ပါ{C.RESET}\n")
             time.sleep(1)
 
-if __name__=="__main__":
-    try: main()
+if __name__ == "__main__":
+    try:
+        title_banner()
+        print(f"  {C.S}🔄 ကီးများကို နောက်ခံမှ ရယူနေသည်...{C.RESET}\n")
+        all_keys, _ = load_keys_silent()
+        time.sleep(0.5)
+        main_menu(all_keys)
     except KeyboardInterrupt:
-        print(f"\n\n  {C.G}👑 ပရိုဂရမ်မှ ထွက်ပါပြီ{C.RESET}\n")
-        print(f"  📘 Facebook: {FACEBOOK_LINK}\n")
+        title_banner()
+        print(f"  {C.M}👑 ပရိုဂရမ်မှ ထွက်ပါပြီ{C.RESET}\n")
     except Exception as e:
         print(f"\n  {C.R}အမှား: {e}{C.RESET}\n")
         input(f"  ဆက်ရန် Enter...")
