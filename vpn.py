@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import urllib.request, urllib.error, base64, os, socket, time, sys
+import urllib.request, urllib.error, base64, os, time, sys
 
-VERSION = "v9.0 SIMPLE & FAST"
+VERSION = "v9.1 WORKING SOURCES ONLY"
 
 class C:
     G = "\033[92m"
@@ -18,28 +18,40 @@ def clear(): os.system("clear")
 
 def header():
     clear()
-    print(f"""{C.BD}{C.CY}
+    print(f"""{C.CY}{C.BD}
 ╔══════════════════════════════════════════════════════╗
 ║     🚀  VPN KEY FINDER  —  {VERSION:^30}║
-║     Simple • Fast • Reliable                          ║
+║     ✅ Working Sources Only • Fast • Reliable          ║
 ╚══════════════════════════════════════════════════════╝{C.RS}""")
 
+# ==============================================================
 # ✅ အလုပ်လုပ်နေတဲ့ လင့်ခ်များသာ ထည့်ထားသည်
+# ==============================================================
 SOURCES = [
+    # 🏆 အကောင်းဆုံး အလုပ်လုပ်နေသည်
     ("Shadowmere B64", "https://shadowmere.xyz/api/b64sub/", "b64"),
     ("Shadowmere TXT", "https://shadowmere.xyz/api/sub/", "txt"),
-    ("Epodonios VLESS", "https://cdn.jsdelivr.net/gh/Epodonios/v2ray-configs@main/Splitted-By-Protocol/vless.txt", "txt"),
-    ("Epodonios SS", "https://cdn.jsdelivr.net/gh/Epodonios/v2ray-configs@main/Splitted-By-Protocol/ss.txt", "txt"),
-    ("FreeV2Ray All", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/all.txt", "txt"),
+    
+    # 🌍 အခြားအလုပ်လုပ်နေသည့် အရင်းအမြစ်များ
+    ("V2Ray Seeker ALL", "https://raw.githubusercontent.com/v2ray-seeker/v2rayseeker/main/sub.txt", "txt"),
+    ("Awesome VPN Daily", "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/all", "txt"),
+    ("IRCF Space", "https://raw.githubusercontent.com/ircfspace/ircf.github.io/main/configs.txt", "txt"),
+    ("TGParse Mixed", "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/splitted/mixed", "txt"),
+    ("Argh73 Vault", "https://raw.githubusercontent.com/Argh73/V2Ray-Vault/main/data/sub/all_configs.txt", "txt"),
+    ("V2Ray Pool ALL", "https://raw.githubusercontent.com/v2ray-pool/v2ray-pool/main/sub.txt", "txt"),
+    
+    # 🇸🇬 အာရှဆာဗာများ
+    ("🇸🇬 SG Servers", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/singapore.txt", "txt"),
+    ("🇲🇾 MY Servers", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/malaysia.txt", "txt"),
+    ("🇹🇭 TH Servers", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/thailand.txt", "txt"),
 ]
 
-def get(url, timeout=12):
+def get(url, timeout=15):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         resp = urllib.request.urlopen(req, timeout=timeout)
         return resp.read().decode("utf-8", errors="ignore")
     except Exception as e:
-        print(f"  {C.R}✗ Failed:{C.RS} {url[:40]}...")
         return None
 
 def parse(text, fmt):
@@ -71,19 +83,28 @@ def parse(text, fmt):
 def load_all():
     all_keys = []
     seen = set()
-    print(f"  {C.Y}🔄 Loading sources...{C.RS}\n")
-    for name, url, fmt in SOURCES:
-        print(f"  {C.B}→ {name}{C.RS}")
+    working = 0
+    total = len(SOURCES)
+    print(f"  {C.Y}🔄 Checking {total} sources...{C.RS}\n")
+    
+    for idx, (name, url, fmt) in enumerate(SOURCES, 1):
+        print(f"  {C.B}[{idx}/{total}]{C.RS} → {name}", end="\r")
         text = get(url)
-        ks = parse(text, fmt)
-        for k in ks:
-            if k["key"] not in seen:
-                seen.add(k["key"])
-                all_keys.append(k)
-        if ks:
-            print(f"     {C.G}✓ Found {len(ks)} keys{C.RS}\n")
+        if text:
+            ks = parse(text, fmt)
+            if ks:
+                working += 1
+                for k in ks:
+                    if k["key"] not in seen:
+                        seen.add(k["key"])
+                        all_keys.append(k)
+                print(f"  {C.G}✓ {name} — {len(ks)} keys{C.RS}")
+            else:
+                print(f"  {C.Y}⚠ {name} — No keys{C.RS}")
         else:
-            print(f"     {C.R}✗ No keys found{C.RS}\n")
+            print(f"  {C.R}✗ {name} — Offline{C.RS}")
+    
+    print(f"\n  {C.G}{C.BD}✅ Done! Working: {working}/{total} | Total Keys: {len(all_keys)}{C.RS}\n")
     return all_keys
 
 def show(keys, proto_filter=None):
@@ -95,15 +116,15 @@ def show(keys, proto_filter=None):
         input("  Press Enter")
         return
     
-    print(f"  {C.G}{C.BD}══════════════════════════════════════════════════════{C.RS}")
-    print(f"  {C.G}✅ Found {len(keys)} keys! Showing first 5{C.RS}")
-    print(f"  {C.G}{C.BD}══════════════════════════════════════════════════════{C.RS}\n")
-    
     icons = {"VLESS": "🟦", "SS": "🟩", "VMESS": "🟧", "TROJAN": "🟪"}
     top5 = keys[:5]
     
+    print(f"  {C.G}{C.BD}══════════════════════════════════════════════════════{C.RS}")
+    print(f"  {C.G}✅ Showing first {min(5, len(keys))} of {len(keys)} keys{C.RS}")
+    print(f"  {C.G}{C.BD}══════════════════════════════════════════════════════{C.RS}\n")
+    
     for i, k in enumerate(top5, 1):
-        print(f"  {C.BD}{i}.{C.RS} {icons.get(k['proto'],'⬜')} {k['proto']} — {k['name'][:40]}")
+        print(f"  {C.BD}{i}.{C.RS} {icons.get(k['proto'],'⬜')} {k['proto']} — {k['name'][:50]}")
         print(f"     {C.CY}{k['key']}{C.RS}\n")
     
     all_text = "\n".join([k["key"] for k in top5])
@@ -121,23 +142,24 @@ def show(keys, proto_filter=None):
 def main():
     header()
     keys = load_all()
-    print(f"  {C.G}{C.BD}✅ Total unique keys: {len(keys)}{C.RS}\n")
-    time.sleep(1)
     
     while True:
         header()
         vless = [k for k in keys if k["proto"] == "VLESS"]
         ss = [k for k in keys if k["proto"] == "SS"]
+        vmess = [k for k in keys if k["proto"] == "VMESS"]
+        trojan = [k for k in keys if k["proto"] == "TROJAN"]
         
-        print(f"  {C.BD}{C.WT}📊 Stats{C.RS}")
-        print(f"  🟦 VLESS: {len(vless)}  |  🟩 SS: {len(ss)}  |  📦 Total: {len(keys)}\n")
+        print(f"  {C.BD}{C.WT}📊 STATISTICS{C.RS}")
+        print(f"  🟦 VLESS: {len(vless):>4}  🟩 SS: {len(ss):>4}  🟧 VMESS: {len(vmess):>4}  🟪 TROJAN: {len(trojan):>4}")
+        print(f"  📦 TOTAL: {len(keys)} keys\n")
         
-        print(f"  {C.BD}{C.WT}🎯 Menu{C.RS}")
-        print(f"  ┌──────────────────────────────────────────────────────┐")
-        print(f"  │  [1] 🟦 Show VLESS Keys    [2] 🟩 Show SS Keys          │")
-        print(f"  │  [3] 📋 Show All Keys       [4] 🔄 Reload All          │")
-        print(f"  │  [0] ❌ Exit                                           │")
-        print(f"  └──────────────────────────────────────────────────────┘\n")
+        print(f"  {C.BD}{C.WT}🎯 MAIN MENU{C.RS}")
+        print(f"  ┌──────────────────────────────────────────────────────────────┐")
+        print(f"  │  [1] 🟦 Show VLESS Keys    [2] 🟩 Show SS Keys                │")
+        print(f"  │  [3] 📋 Show All Keys       [4] 🔄 Reload All Sources         │")
+        print(f"  │  [0] ❌ Exit                                                  │")
+        print(f"  └──────────────────────────────────────────────────────────────┘\n")
         
         sel = input(f"  {C.BD}Choose → {C.RS}").strip()
         
@@ -150,13 +172,12 @@ def main():
         elif sel == "4":
             header()
             keys = load_all()
-            print(f"  {C.G}✅ Reloaded! Total keys: {len(keys)}{C.RS}\n")
             input("  Press Enter")
         elif sel == "0":
-            print(f"\n  {C.G}👋 Goodbye!{C.RS}")
+            print(f"\n  {C.G}👋 Thanks for using! Goodbye!{C.RS}")
             break
         else:
-            print(f"  {C.R}❌ Invalid option{C.RS}\n")
+            print(f"  {C.R}❌ Invalid option. Choose 0-4{C.RS}\n")
             time.sleep(1)
 
 if __name__ == "__main__":
@@ -166,4 +187,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n  {C.R}❌ Error: {e}{C.RS}\n")
         input("  Press Enter")
-                
+                           
