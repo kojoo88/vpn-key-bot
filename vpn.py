@@ -15,8 +15,10 @@ ALL_KEYS_FILE = "all_keys.txt"
 def clear():
     os.system("clear")
 
+# ✅ လင့်ခ်နှစ်ခုစလုံး ထည့်ပြီးသား
 SOURCES = [
     ("Shadowmere B64", "https://shadowmere.xyz/api/b64sub/", "b64"),
+    ("Argh73 Vault", "https://raw.githubusercontent.com/Argh73/V2Ray-Vault/main/data/sub/all_configs.txt", "txt"),
 ]
 
 def get_text(url):
@@ -86,7 +88,7 @@ def load_favorites():
             with open(FAVORITES_FILE, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
-                    if line.startswith("ss://") or line.startswith("vless://"):
+                    if line.startswith("ss://") or line.startswith("vless://") or line.startswith("vmess://") or line.startswith("trojan://"):
                         favs.append(line)
         except:
             pass
@@ -159,7 +161,7 @@ def main():
             print(R + "Failed" + RS)
     
     print()
-    print(CY + "Total Keys: " + str(len(all_keys)) + RS)
+    print(CY + "Total Unique Keys: " + str(len(all_keys)) + RS)
     print()
     
     while True:
@@ -169,11 +171,13 @@ def main():
         print("  1. Show All Keys")
         print("  2. Show VLESS Only")
         print("  3. Show SS Only")
-        print("  4. Search by Country/Name")
-        print("  5. Save to File")
-        print("  6. Show Favorites")
-        print("  7. Add Key to Favorites")
-        print("  8. Show Subscribe URL")
+        print("  4. Show VMESS Only")
+        print("  5. Show TROJAN Only")
+        print("  6. Search by Country/Name")
+        print("  7. Save All to File")
+        print("  8. Show Favorites")
+        print("  9. Add Key to Favorites")
+        print(" 10. Show Subscribe URLs")
         print("  0. Exit")
         print("=" * 50)
         
@@ -188,19 +192,23 @@ def main():
             show(all_keys, "All Keys")
         
         elif choice == "2":
-            vless_keys = [k for k in all_keys if k["proto"] == "VLESS"]
-            show(vless_keys, "VLESS Keys")
+            show([k for k in all_keys if k["proto"] == "VLESS"], "VLESS Keys")
         
         elif choice == "3":
-            ss_keys = [k for k in all_keys if k["proto"] == "SS"]
-            show(ss_keys, "SS Keys")
+            show([k for k in all_keys if k["proto"] == "SS"], "SS Keys")
         
         elif choice == "4":
+            show([k for k in all_keys if k["proto"] == "VMESS"], "VMESS Keys")
+        
+        elif choice == "5":
+            show([k for k in all_keys if k["proto"] == "TROJAN"], "TROJAN Keys")
+        
+        elif choice == "6":
             keyword = input("Enter country code or name → ").strip()
             found = search_by_country(all_keys, keyword)
             show(found, "Search Results")
         
-        elif choice == "5":
+        elif choice == "7":
             if save_to_file(all_keys, ALL_KEYS_FILE):
                 print()
                 print(G + "[+] Saved to " + ALL_KEYS_FILE + RS)
@@ -211,7 +219,7 @@ def main():
                 print()
             input("Press Enter to go back")
         
-        elif choice == "6":
+        elif choice == "8":
             fav_keys = load_favorites()
             print()
             if not fav_keys:
@@ -224,7 +232,7 @@ def main():
             print()
             input("Press Enter to go back")
         
-        elif choice == "7":
+        elif choice == "9":
             idx_str = input("Enter key number to add → ").strip()
             try:
                 idx = int(idx_str) - 1
@@ -247,10 +255,11 @@ def main():
                 print()
             input("Press Enter to go back")
         
-        elif choice == "8":
+        elif choice == "10":
             print()
-            print(CY + "Subscribe URL:" + RS)
-            print("https://shadowmere.xyz/api/b64sub/")
+            print(CY + "Subscribe URLs:" + RS)
+            for name, url, _ in SOURCES:
+                print("  " + name + ": " + url)
             print()
             print(Y + "Use: V2RayNG → + → Subscribe → Paste URL → Refresh" + RS)
             print()
@@ -263,3 +272,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
