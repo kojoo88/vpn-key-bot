@@ -3,7 +3,7 @@
 import urllib.request, base64, os, socket, time, json, sys
 from datetime import datetime
 
-VERSION = "🏆 ETERNAL SUPREME v8.0"
+VERSION = "🏆 ETERNAL SUPREME v8.1"
 FAV_FILE = os.path.expanduser("~/.vpn_eternal.json")
 
 class C:
@@ -23,7 +23,7 @@ def title():
     clear()
     print(f"""{C.G}
 ╔═════════════════════════════════════╗
-║     {C.B}🏆 ETERNAL SUPREME v8.0 🏆{C.RESET}{C.G}     ║
+║     {C.B}🏆 ETERNAL SUPREME v8.1 🏆{C.RESET}{C.G}     ║
 ║   Beyond stars, beyond time ✨       ║
 ╚═════════════════════════════════════╝{C.RESET}""")
     print(f"  🕐 {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
@@ -109,10 +109,11 @@ def flag(name):
     return "🌐 --"
 
 def rank(ms):
-    if ms==9999: return f"{C.R}✖ OFFLINE{C.RESET}"
-    if ms<60: return f"{C.G}👑 S-TIER {C.E}●{ms}ms{C.RESET}"
-    if ms<100: return f"{C.D}💎 A-TIER {C.S}●{ms}ms{C.RESET}"
-    if ms<180: return f"{C.W}⭐ B-TIER {C.A}●{ms}ms{C.RESET}"
+    if ms == 9999: return f"{C.R}✖ OFFLINE{C.RESET}"
+    ms = int(ms)
+    if ms < 60: return f"{C.G}👑 S-TIER {C.E}●{ms}ms{C.RESET}"
+    if ms < 100: return f"{C.D}💎 A-TIER {C.S}●{ms}ms{C.RESET}"
+    if ms < 180: return f"{C.W}⭐ B-TIER {C.A}●{ms}ms{C.RESET}"
     return f"{C.N}⚡ C-TIER {C.R}●{ms}ms{C.RESET}"
 
 def load_keys():
@@ -153,7 +154,7 @@ def scan_best(keys, limit=15):
         print(f"\r  [{bar}] {pct}%", end="")
     print("\n")
     res.sort(key=lambda x:x["ms"])
-    return [r for r in res if r["ms"]<400]
+    return [r for r in res if int(r["ms"]) < 400]
 
 def show_list(data, title_text):
     if not data:
@@ -174,7 +175,7 @@ def copy_top(data, n=3):
     print(f"  {C.G}💎 အကောင်းဆုံး {len(top)} ခု ကီးများ{C.RESET}")
     print("  "+"═"*65)
     for r in top:
-        print(f"  နိုင်ငံ: {flag(r['name'])}  အဆင့်: {rank(r['name'])}")
+        print(f"  နိုင်ငံ: {flag(r['name'])}  အဆင့်: {rank(r['ms'])}")
         print(f"  ကီး: {r['key'][:60]}...")
         print()
     ok = copy_t(keys_text)
