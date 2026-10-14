@@ -321,8 +321,7 @@ def instant_best(all_keys):
     show_card(best)
     print(f"{PUR}╠{h()}╣{RST}")
     print(f"{PUR}║{RST}  [S] 💖 အကြိုက်ဆုံးသိမ်းမည်    [C] 📋 ကီးကူးယူမည်{PUR}║{RST}")
-    print(f"{PUR}║{RST}  [မျှဝေရမျှဝေရန်ပြင်ဆင်မည််ပြင်ဆင်မည်] 📤 မျှဝေရန်ပြင်ဆင်မည်    [X] 🔙 
-    ပြန်သွားမည်{PUR}║{RST}")
+    print(f"{PUR}║{RST}  [T] 📤 မျှဝေရန်ပြင်ဆင်မည်    [X] 🔙 ပြန်သွားမည်{PUR}║{RST}")
     print(f"{PUR}╚{h()}╝{RST}")
     ch = input(f"\n  ရွေးပါ → ").upper()
     if ch == "S":
@@ -634,4 +633,4 @@ if __name__ == "__main__":
         clear()
         print(f"\n\n{PUR}✨ ပရိုဂရမ်မှထွက်သွားပါပြီ ✨{RST}\n")
         sys.exit(0)
-    
+        
