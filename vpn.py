@@ -33,13 +33,12 @@ def clear():
 
 def open_admin_link():
     clear()
-    print(PUR + "="*50 + RST)
-    print(PUR + "|    FACEBOOK PAGE LINK                  |" + RST)
-    print(PUR + "="*50 + RST)
-    print(f"\n  LINK: {CYN}{ADMIN_LINK}{RST}")
-    print(f"\n  Copy the link above and open in your browser")
-    print(f"\n  Press Enter to go back...")
-    input()
+    print(PUR + "="*60 + RST)
+    print(PUR + "|        FACEBOOK PAGE LINK                |" + RST)
+    print(PUR + "="*60 + RST)
+    print(f"\n  {CYN}{ADMIN_LINK}{RST}")
+    print(f"\n  Copy the link above to open in browser")
+    input(f"\n  Press Enter to go back...")
 
 # ================== SOURCES ==================
 SOURCES = [
@@ -75,7 +74,7 @@ def get_net():
         return "Unknown"
 
 def get_country_code(name):
-    codes = ["SG", "US", "JP", "KR", "HK", "TW", "UK", "GB", "DE", "NL", "CA", "AU", "IN", "TH", "MY", "CN", "RU", "FR", "IT", "ES"]
+    codes = ["SG", "US", "JP", "KR", "HK", "TW", "UK", "GB", "DE", "NL", "CA", "AU", "IN", "TH", "MY", "CN", "RU", "FR", "IT"]
     name_upper = name.upper()
     for c in codes:
         if c in name_upper:
@@ -105,8 +104,7 @@ def parse(content, fmt):
             if line.startswith(("vless://", "ss://")):
                 protocol = "VLESS" if line.startswith("vless://") else "SS"
                 code = get_country_code(line)
-                name = f"{code}-{protocol}"
-                keys.append({"name": name, "url": line, "protocol": protocol, "country": code})
+                keys.append({"country": code, "protocol": protocol, "url": line})
     except:
         pass
     return keys
@@ -135,13 +133,12 @@ def ping_test(url):
         return False, 999, "Offline", 0
 
 def load_all():
-    all_keys = []
     vless = []
     ss = []
     clear()
-    print(PUR + "="*50 + RST)
-    print(PUR + "|   LOADING SOURCES...                   |" + RST)
-    print(PUR + "-"*50 + RST)
+    print(PUR + "="*60 + RST)
+    print(PUR + "|         LOADING SOURCES...              |" + RST)
+    print(PUR + "-"*60 + RST)
     success_count = 0
     for idx, (name, url, fmt) in enumerate(SOURCES, 1):
         print(f"  [{idx}/{len(SOURCES)}] {name:<25}", end=" ")
@@ -153,42 +150,20 @@ def load_all():
                     vless.append(k)
                 else:
                     ss.append(k)
-            all_keys.extend(keys)
             print(f"{GRN}OK {len(keys)} keys{RST}")
             success_count += 1
         else:
             print(f"{RED}FAILED{RST}")
-    print(PUR + "="*50 + RST)
+    print(PUR + "="*60 + RST)
     print(f"{GRN}DONE: {success_count}/{len(SOURCES)} sources{RST}")
     print(f"   VLESS: {len(vless)}  |  SS: {len(ss)}{WHT}")
     load_favorites()
-    
-    # SAVE ALL KEYS IMMEDIATELY
-    with open("all_keys.txt", "w", encoding="utf-8") as f:
-        f.write("="*80 + "\n")
-        f.write("  ALL KEYS - FULL LIST\n")
-        f.write("="*80 + "\n\n")
-        f.write(f"Total VLESS: {len(vless)}  |  Total SS: {len(ss)}\n")
-        f.write("="*80 + "\n\n")
-        idx = 1
-        for k in vless:
-            f.write(f"[{idx}] {k['country']} | {k['protocol']}\n")
-            f.write(f"     KEY: {k['url']}\n")
-            f.write("-"*80 + "\n")
-            idx += 1
-        for k in ss:
-            f.write(f"[{idx}] {k['country']} | {k['protocol']}\n")
-            f.write(f"     KEY: {k['url']}\n")
-            f.write("-"*80 + "\n")
-            idx += 1
-    print(f"\n{GRN}ALL KEYS SAVED TO: all_keys.txt{RST}")
-    print(f"   Type: cat all_keys.txt  to view full keys")
-    input(f"\nPress Enter to continue...")
+    input(f"\n  Press Enter to continue...")
     return vless, ss
 
-def scan_and_show(keys, title, count=20):
+def scan_and_show(keys, title, count=10):
     if not keys:
-        print(f"\n{YEL}Load sources first!{RST}")
+        print(f"\n{YEL}⚠️  Load sources first from Menu [1]{RST}")
         time.sleep(1.5)
         return
     results = []
@@ -210,37 +185,27 @@ def scan_and_show(keys, title, count=20):
     results.sort(key=lambda x: x["ms"])
     top = results[:count]
     
-    # SAVE TO FILE
-    with open("results.txt", "w", encoding="utf-8") as f:
-        f.write("="*80 + "\n")
-        f.write(f"  {title} - TOP {count} (Sorted by Ping)\n")
-        f.write("="*80 + "\n\n")
-        for idx, s in enumerate(top, 1):
-            f.write(f"[{idx}] {s['country']} | Ping: {s['ms']}ms | {s['lvl']}\n")
-            f.write(f"     KEY: {s['url']}\n")
-            f.write("-"*80 + "\n")
+    print(f"\n{GRN}✅ FOUND: {len(results)} working servers{RST}")
+    print(PUR + "="*70 + RST)
     
-    # SHOW SUMMARY ON SCREEN
-    print(f"\n{GRN}FOUND: {len(results)} working servers{RST}")
-    print(f"{CYN}Full keys saved to: results.txt{RST}")
-    print(f"   View with: cat results.txt\n")
-    print(PUR + "-"*70 + RST)
-    
+    # ============== KEY FULLY DISPLAYED HERE ==============
     for idx, s in enumerate(top, 1):
         stars = "*"*s["sc"] + "-"*(5-s["sc"])
-        print(f"  [{idx}] {s['country']:4} | Ping: {CYN}{s['ms']:>4}ms{RST} | {stars} | {GRN}{s['lvl']}{RST}")
+        print(f"\n{PUR}[{idx}] {s['country']}  |  Ping: {CYN}{s['ms']}ms{RST}  |  {stars}  {GRN}{s['lvl']}{RST}")
+        print(f"{CYN}🔑 FULL KEY:{RST}")
+        print(f"{WHT}{s['url']}{RST}")
+        print(f"{PUR}{'-'*70}{RST}")
     
-    print(PUR + "="*70 + RST)
-    input(f"\nPress Enter to continue...")
+    input(f"\n  Press Enter to go back to Menu...")
 
 def best_for_me(all_keys):
     if not all_keys:
-        print(f"\n{YEL}Load sources first!{RST}")
+        print(f"\n{YEL}⚠️  Load sources first from Menu [1]{RST}")
         time.sleep(1.5)
         return
     clear()
     print(PUR + "="*70 + RST)
-    print(PUR + "|  FINDING BEST SERVER FOR YOU...         |" + RST)
+    print(PUR + "|     🏆 FINDING BEST SERVER FOR YOU      |" + RST)
     print(PUR + "-"*70 + RST)
     
     results = []
@@ -258,64 +223,47 @@ def best_for_me(all_keys):
     results.sort(key=lambda x: x["ms"])
     if results:
         best = results[0]
-        
-        # SAVE BEST KEY TO FILE
-        with open("best_key.txt", "w", encoding="utf-8") as f:
-            f.write("="*80 + "\n")
-            f.write("  BEST SERVER FOR YOU\n")
-            f.write("="*80 + "\n\n")
-            f.write(f"Country: {best['country']}\n")
-            f.write(f"Protocol: {best['protocol']}\n")
-            f.write(f"Ping: {best['ms']}ms\n")
-            f.write(f"Speed: {best['lvl']}\n")
-            f.write(f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write("\n" + "="*80 + "\n")
-            f.write(f"FULL KEY:\n{best['url']}\n")
+        stars = "*"*best["sc"] + "-"*(5-best["sc"])
         
         clear()
         print(PUR + "="*70 + RST)
-        print(PUR + "|        BEST SERVER FOUND!                |" + RST)
+        print(PUR + "|       🏆 BEST SERVER FOUND!              |" + RST)
         print(PUR + "-"*70 + RST)
         print(f"\n  Country : {best['country']}")
         print(f"  Protocol: {best['protocol']}")
         print(f"  Ping    : {GRN}{best['ms']}ms{RST}")
-        print(f"  Speed   : {GRN}{best['lvl']}{RST}")
-        print(f"\n  {PINK}FULL KEY SAVED TO: best_key.txt{RST}")
-        print(f"   View with: cat best_key.txt")
-        print(f"\n{'─'*70}")
+        print(f"  Speed   : {stars}  {GRN}{best['lvl']}{RST}")
+        print(f"\n{CYN}🔑 YOUR FULL VPN KEY:{RST}")
+        print(f"{WHT}{best['url']}{RST}")
+        print(PUR + "="*70 + RST)
         
-        choice = input(f"\n  [S] Save to favorites  |  [X] Back  → ").upper()
+        choice = input(f"\n  [S] Save to Favorites  |  [X] Back to Menu  → ").upper()
         if choice == "S":
             if best["url"] not in favorites:
                 favorites.append(best["url"])
                 save_favorites()
-                print(f"\n{GRN}SAVED TO FAVORITES!{RST}")
+                print(f"\n{GRN}✅ SAVED TO FAVORITES! ❤️{RST}")
             else:
-                print(f"\n{YEL}ALREADY IN FAVORITES{RST}")
+                print(f"\n{YEL}⚠️  Already in Favorites{RST}")
         time.sleep(1.5)
     else:
-        print(f"\n{RED}NO WORKING SERVER FOUND{RST}")
+        print(f"\n{RED}❌ No working server found{RST}")
         time.sleep(1.5)
 
 def show_favorites():
     clear()
     print(PUR + "="*70 + RST)
-    print(PUR + "|           MY FAVORITES                   |" + RST)
+    print(PUR + "|          ❤️  MY FAVORITE KEYS            |" + RST)
     print(PUR + "-"*70 + RST)
     if not favorites:
         print(f"\n  No favorites saved yet")
     else:
         print(f"  Total: {len(favorites)} keys\n")
-        with open("favorites.txt", "r", encoding="utf-8") as f:
-            content = f.read()
-        print(f"  Full list saved in: favorites.txt")
-        print(f"  View with: cat favorites.txt\n")
-        for idx, url in enumerate(favorites[:5], 1):
-            short = url[:60] + "..." if len(url) > 60 else url
-            print(f"  [{idx}] {short}")
-        if len(favorites) > 5:
-            print(f"  ... and {len(favorites)-5} more")
-    input(f"\nPress Enter to continue...")
+        for idx, url in enumerate(favorites, 1):
+            print(f"{PUR}[{idx}]{RST} {CYN}🔑 FULL KEY:{RST}")
+            print(f"{WHT}{url}{RST}")
+            print(f"{PUR}{'-'*70}{RST}")
+    input(f"\n  Press Enter to go back...")
 
 def main():
     vless, ss = [], []
@@ -324,32 +272,32 @@ def main():
         net_type = get_net()
         total_keys = len(vless) + len(ss)
         print(PUR + "="*70 + RST)
-        print(PUR + "|      VPN KEY FINDER - PREMIUM            |" + RST)
+        print(PUR + "|      🚀 VPN KEY FINDER - PREMIUM         |" + RST)
         print(PUR + "-"*70 + RST)
-        print(f"  Network : {CYN}{net_type}{RST}")
-        print(f"  Keys Loaded: {GRN}{total_keys}{RST}")
+        print(f"  📡 Network : {CYN}{net_type}{RST}")
+        print(f"  🔑 Keys Loaded: {GRN}{total_keys}{RST}")
         print(PUR + "-"*70 + RST)
         print(f"  [1] Load All Sources")
-        print(f"  [2] Show VLESS Servers")
-        print(f"  [3] Show SS Servers")
-        print(f"  [4] Find Best Server")
+        print(f"  [2] Show VLESS Servers (Full Key)")
+        print(f"  [3] Show SS Servers (Full Key)")
+        print(f"  [4] Find Best Server (Full Key)")
         print(f"  [5] My Favorites")
         print(f"  [6] Admin Facebook Link")
         print(PUR + "-"*70 + RST)
         print(f"  [0] Exit")
         print(PUR + "="*70 + RST)
-        choice = input(f"\n  Enter choice: ")
+        choice = input(f"\n  Enter your choice: ")
         
         if choice == "0":
             clear()
-            print(f"\n  {GRN}GOODBYE!{RST}\n")
+            print(f"\n  {GRN}Goodbye! 👋{RST}\n")
             break
         elif choice == "1":
             vless, ss = load_all()
         elif choice == "2":
-            scan_and_show(vless, "VLESS SERVERS - FASTEST FIRST", 20)
+            scan_and_show(vless, "VLESS SERVERS - FASTEST FIRST", 10)
         elif choice == "3":
-            scan_and_show(ss, "SS SERVERS - FASTEST FIRST", 20)
+            scan_and_show(ss, "SS SERVERS - FASTEST FIRST", 10)
         elif choice == "4":
             best_for_me(vless + ss)
         elif choice == "5":
@@ -357,7 +305,7 @@ def main():
         elif choice == "6":
             open_admin_link()
         else:
-            print(f"\n  {RED}INVALID CHOICE!{RST}")
+            print(f"\n  {RED}⚠️  Invalid choice! Try again{RST}")
             time.sleep(1)
 
 if __name__ == "__main__":
@@ -365,7 +313,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         clear()
-        print(f"\n\n  {GRN}EXITED{RST}\n")
+        print(f"\n\n  {GRN}Exited. Goodbye!{RST}\n")
         sys.exit(0)
     except Exception as e:
         print(f"\n  {RED}ERROR: {e}{RST}")
