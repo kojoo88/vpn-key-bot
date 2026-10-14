@@ -17,9 +17,35 @@ DIM = "\033[2m"
 BD  = "\033[1m"
 RST = "\033[0m"
 
+# ================== ADMIN LINK ==================
+ADMIN_LINK = "https://www.facebook.com/share/19TVQNTUGZ/"
+# =================================================
+
 def clear(): os.system("clear")
 
-# ✅ အလုပ်လုပ်နေတဲ့ Sources သာထားရှိသည်
+def open_admin_link():
+    """Admin စာမျက်နှာကို တိုက်ရိုက်ဖွင့်ပေးမယ်"""
+    clear()
+    print(PUR + "="*50 + RST)
+    print(PUR + "|" + RST + "   📘 Admin Page ဖွင့်နေသည်...    " + PUR + "|" + RST)
+    print(PUR + "="*50 + RST)
+    print(f"\n  🔗 လင့်ခ်- {CYN}{ADMIN_LINK}{RST}")
+    print(f"\n  🌐 ဘရောက်ဇာတွင် တိုက်ရိုက်ဖွင့်နေသည်...")
+    print(f"  {YEL}မဖွင့်လှစ်ပါက အပေါ်ကလင့်ခ်ကို ကူးယူဖွင့်ပါ{RST}\n")
+    
+    # Termux/Android တွင် တိုက်ရိုက်ဖွင့်ရန်
+    try:
+        import subprocess
+        subprocess.run(['am', 'start', '-a', 'android.intent.action.VIEW', '-d', ADMIN_LINK], check=False)
+    except:
+        try:
+            os.system(f"termux-open-url '{ADMIN_LINK}'")
+        except:
+            pass
+    
+    input(f"{CYN}ပြန်ရန် Enter နှိပ်ပါ...{RST}")
+
+# SOURCES
 SOURCES = [
     ("V2Nodes", "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
     ("Shadowmere B64", "https://shadowmere.xyz/api/b64sub/", "b64"),
@@ -236,6 +262,7 @@ def main():
         print(PUR + "|" + RST + "  [3] SS - Top 10 Fastest" + " "*32 + PUR + "|" + RST)
         print(PUR + "|" + RST + "  [4] 🏆 Best Server For My Network" + " "*22 + PUR + "|" + RST)
         print(PUR + "|" + RST + "  [5] ❤️  My Favorites" + " "*34 + PUR + "|" + RST)
+        print(PUR + "|" + RST + "  [6] 📘 Admin ဆီဆက်သွယ်ရန်" + " "*26 + PUR + "|" + RST)
         print(PUR + "|" + RST + "  [0] Exit" + " "*42 + PUR + "|" + RST)
         print(PUR + "="*50 + RST)
         ch = input("\nChoose -> ")
@@ -255,6 +282,8 @@ def main():
             best_for_me(vless + ss)
         elif ch == "5":
             show_favorites()
+        elif ch == "6":
+            open_admin_link()
         else:
             print(f"\n{RED}Invalid choice! Try again{RST}")
             time.sleep(1)
