@@ -25,13 +25,12 @@ def get_text(url):
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=15
+            headers={"User-Agent": "Mozilla/5.0"}
         )
-        with urllib.request.urlopen(req) as r:
+        with urllib.request.urlopen(req, timeout=15) as r:
             return r.read().decode("utf-8", errors="ignore")
     except Exception as e:
-        print(f"   ❌ Error: {str(e)[:40]}")
+        print(f"   ❌ {str(e)[:50]}")
         return None
 
 def parse_keys(text, fmt):
@@ -48,7 +47,7 @@ def parse_keys(text, fmt):
             elif line.startswith("ss://"):
                 keys.append({"proto": "SS", "key": line, "ping": "--ms", "ms": 9999})
     except Exception as e:
-        print(f"   Parse error: {e}")
+        print(f"   Parse: {e}")
     return keys
 
 def show_and_check(keys):
@@ -105,7 +104,7 @@ def main():
     print(f"SS:    {G}{len(all_ss)}{RS} keys\n")
     
     if len(all_vless) == 0 and len(all_ss) == 0:
-        print(f"{R}⚠️  No keys found from any source{RS}")
+        print(f"{R}⚠️  No keys found{RS}")
         input("Press Enter to exit")
         return
     
@@ -145,4 +144,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+        
