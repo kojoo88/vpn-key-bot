@@ -3,7 +3,7 @@
 import urllib.request, urllib.error, base64, os, socket, time, json, sys
 from datetime import datetime
 
-VERSION = "🚀 ALL-SOURCES EDITION v8.7"
+VERSION = "🚀 ALL-SOURCES EDITION v8.8 PREMIUM"
 FAV_FILE = os.path.expanduser("~/.vpn_premium.json")
 FACEBOOK_LINK = "https://www.facebook.com/share/18jrazYpmS/"
 
@@ -16,24 +16,48 @@ class C:
     R = "\033[38;5;196m"
     W = "\033[38;5;255m"
     GR = "\033[38;5;245m"
+    GOLD = "\033[38;5;220m"
+    CYAN = "\033[38;5;51m"
+    MAGENTA = "\033[38;5;165m"
     RESET = "\033[0m"
     BOLD = "\033[1m"
+    BLINK = "\033[5m"
 
 def clear(): os.system("clear")
 
+def gold_border(text, width=58):
+    line = "╔" + "═" * width + "╗"
+    mid = f"║ {text:^{width}} ║"
+    end = "╚" + "═" * width + "╝"
+    return f"{C.GOLD}{C.BOLD}{line}\n{mid}\n{end}{C.RESET}"
+
 def premium_header():
     clear()
-    print(f"""
-{C.P}{C.BOLD}
-╔══════════════════════════════════════════════════════════════╗
-║   🚀  U L T R A   P R E M I U M   E D I T I O N              ║
-║   {VERSION:^60}║
-╠══════════════════════════════════════════════════════════════╣
-║   ⚡ Fast VPN Key Finder • VLESS / SS / VMESS / TROJAN        ║
-╚══════════════════════════════════════════════════════════════╝{C.RESET}""")
     now = datetime.now()
-    print(f"  {C.G}📅 ရက်စွဲ:{C.RESET} {now.strftime('%Y-%m-%d')}   {C.G}⏰ အချိန်:{C.RESET} {now.strftime('%H:%M:%S')}")
-    print(f"  {C.B}📘 Facebook:{C.RESET} {FACEBOOK_LINK}\n")
+
+    print(f"""{C.GOLD}{C.BOLD}
+╔════════════════════════════════════════════════════════════════╗
+║             ✨  U L T R A   P R E M I U M   E D I T I O N             ║
+║              {VERSION:^62}             ║
+╠════════════════════════════════════════════════════════════════╣
+║   ⚡ Fast VPN Key Finder • VLESS / SS / VMESS / TROJAN                ║
+║   🔰 Premium Scan Engine • Low Ping Servers Only                      ║
+╚════════════════════════════════════════════════════════════════╝{C.RESET}""")
+
+    print(f"  {C.GOLD}📅 ရက်စွဲ:{C.RESET} {now.strftime('%Y-%m-%d')}   {C.GOLD}⏰ အချိန်:{C.RESET} {now.strftime('%H:%M:%S')}")
+    print(f"  {C.CYAN}📘 Facebook:{C.RESET} {FACEBOOK_LINK}\n")
+
+def loading_premium(text, duration=1.2):
+    frames = [
+        f"  {C.Y}⚡ {text}... {C.RESET}",
+        f"  {C.GOLD}⚡ {text}... {C.RESET}",
+        f"  {C.Y}⚡ {text}... {C.RESET}",
+    ]
+    for _ in range(int(duration * 4)):
+        for frame in frames:
+            print(frame, end="\r")
+            time.sleep(0.15)
+    print()
 
 # ==============================================================
 # 🔗 အရင်းအမြစ်အားလုံး — အရင်ဟာတွေ + အသစ်တွေ အားလုံးပါ
@@ -55,7 +79,7 @@ SOURCES = [
     ("Config Collector ALL", "https://raw.githubusercontent.com/tahmaseb73/configs-collector-v2ray/refs/heads/main/data/sub/splitted/mixed_19.txt", "txt"),
     ("TGParse Mixed", "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/splitted/mixed", "txt"),
     ("MorpheusAdam", "https://raw.githubusercontent.com/morpheusadam/v2ray-config/main/subs/all.txt", "txt"),
-    
+
     # 🟦 VLESS သီးသန့်
     ("Epodonios VLESS", "https://cdn.jsdelivr.net/gh/Epodonios/v2ray-configs@main/Splitted-By-Protocol/vless.txt", "txt"),
     ("MatinGhanbari VLESS", "https://cdn.jsdelivr.net/gh/MatinGhanbari/v2ray-configs@main/subscriptions/filtered/subs/vless.txt", "txt"),
@@ -63,22 +87,22 @@ SOURCES = [
     ("Config Collector VLESS", "https://raw.githubusercontent.com/tahmaseb73/configs-collector-v2ray/refs/heads/main/data/sub/protocols/vless.txt", "txt"),
     ("Free V2Ray VLESS", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/vless.txt", "txt"),
     ("V2Ray Seeker VLESS", "https://raw.githubusercontent.com/v2ray-seeker/v2rayseeker/main/vless.txt", "txt"),
-    
+
     # 🟩 SS သီးသန့်
     ("Epodonios SS", "https://cdn.jsdelivr.net/gh/Epodonios/v2ray-configs@main/Splitted-By-Protocol/ss.txt", "txt"),
     ("MatinGhanbari SS", "https://cdn.jsdelivr.net/gh/MatinGhanbari/v2ray-configs@main/subscriptions/filtered/subs/ss.txt", "txt"),
     ("V2Ray Seeker SS", "https://raw.githubusercontent.com/v2ray-seeker/v2rayseeker/main/ss.txt", "txt"),
     ("Free V2Ray SS", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/ss.txt", "txt"),
-    
+
     # 🟧 VMESS သီးသန့်
     ("Epodonios VMESS", "https://cdn.jsdelivr.net/gh/Epodonios/v2ray-configs@main/Splitted-By-Protocol/vmess.txt", "txt"),
     ("MatinGhanbari VMESS", "https://cdn.jsdelivr.net/gh/MatinGhanbari/v2ray-configs@main/subscriptions/filtered/subs/vmess.txt", "txt"),
     ("Free V2Ray VMESS", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/vmess.txt", "txt"),
-    
+
     # 🟪 TROJAN သီးသန့်
     ("Epodonios TROJAN", "https://cdn.jsdelivr.net/gh/Epodonios/v2ray-configs@main/Splitted-By-Protocol/trojan.txt", "txt"),
     ("MatinGhanbari TROJAN", "https://cdn.jsdelivr.net/gh/MatinGhanbari/v2ray-configs@main/subscriptions/filtered/subs/trojan.txt", "txt"),
-    
+
     # 🌍 နိုင်ငံအလိုက်
     ("🇸🇬 Singapore", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/singapore.txt", "txt"),
     ("🇲🇾 Malaysia", "https://raw.githubusercontent.com/Free-V2Ray/Free-V2Ray/main/malaysia.txt", "txt"),
@@ -167,8 +191,8 @@ def flag_display(name):
 
 def tier_text(ms):
     if ms == 9999: return f"{C.R}❌ အော့ဖ်လိုင်း{C.RESET}"
-    if ms < 60: return f"{C.G}👑 ELITE  {ms}ms{C.RESET}"
-    if ms < 100: return f"{C.B}💎 PREMIUM {ms}ms{C.RESET}"
+    if ms < 60: return f"{C.GOLD}👑 ELITE  {ms}ms{C.RESET}"
+    if ms < 100: return f"{C.CYAN}💎 PREMIUM {ms}ms{C.RESET}"
     if ms < 180: return f"{C.Y}⭐ FAST    {ms}ms{C.RESET}"
     if ms < 300: return f"{C.O}⚡ NORMAL  {ms}ms{C.RESET}"
     return f"{C.GR}⚠️ SLOW    {ms}ms{C.RESET}"
@@ -188,7 +212,7 @@ def load_all_keys_silent():
 
 def scan_and_sort(keys, limit=30):
     premium_header()
-    print(f"  {C.Y}⚡ စကင်န်ဖတ်နေသည်... ကျေးဇူးပြု၍ စောင့်ပါ{C.RESET}\n")
+    print(f"  {C.GOLD}⚡ စကင်န်ဖတ်နေသည်... ကျေးဇူးပြု၍ စောင့်ပါ{C.RESET}\n")
     results = []
     total = min(len(keys), limit)
     for i in range(total):
@@ -197,7 +221,7 @@ def scan_and_sort(keys, limit=30):
         ms = ping_server(host, port)
         results.append({"name": k["name"], "key": k["key"], "proto": k["proto"], "ms": ms})
         pct = int((i + 1) / total * 100)
-        bar = "█" * int(pct / 5) + "░" * (20 - int(pct / 5))
+        bar = f"{C.GOLD}{C.BOLD}" + "█" * int(pct / 5) + f"{C.RESET}{C.GR}" + "░" * (20 - int(pct / 5)) + f"{C.RESET}"
         print(f"  {C.B}[{bar}] {pct:>3}%{C.RESET}", end="\r")
     print("\n")
     results.sort(key=lambda x: x["ms"])
@@ -210,30 +234,30 @@ def show_result_list(data, title, count=5):
         return
     top = data[:count]
     pi = {"VLESS": "🟦", "SS": "🟩", "VMESS": "🟧", "TROJAN": "🟪"}
-    
-    print(f"  {C.P}{C.BOLD}╔════════════════════════════════════════════════════════╗{C.RESET}")
-    print(f"  {C.P}{C.BOLD}║ ✅ {title}{' '*(56-len(title))}{C.P}║{C.RESET}")
-    print(f"  {C.P}{C.BOLD}╚════════════════════════════════════════════════════════╝{C.RESET}\n")
-    
+
+    print()
+    print(gold_border(f"✅ {title}", width=56))
+    print()
+
     for idx, item in enumerate(top, 1):
         icon = pi.get(item["proto"], "⬜")
-        print(f"  {C.Y}{C.BOLD}─── ဆာဗာ {idx}/{count} ──────────────────────────────────────{C.RESET}")
+        print(f"  {C.GOLD}{C.BOLD}─── ဆာဗာ {idx}/{count} {'─' * 45}{C.RESET}")
         print(f"  🌏 နိုင်ငံ   : {flag_display(item['name'])}")
         print(f"  🚀 အမြန်နှုန်း: {tier_text(item['ms'])}")
         print(f"  🏷️ အမည်    : {item['name'][:50]}")
         print(f"  📦 ပရိုတိုကော: {icon} {item['proto']}")
         print(f"  🔑 ကီး     :")
-        print(f"  {C.G}{item['key']}{C.RESET}\n")
-    
+        print(f"  {C.GOLD}{item['key']}{C.RESET}\n")
+
     all_text = "\n".join([x["key"] for x in top])
     try:
         import subprocess
         subprocess.run(["termux-clipboard-set", all_text])
-        print(f"  {C.G}✅ ကီးအားလုံး ကလစ်ဘုတ်သို့ ကူးယူပြီးပါပြီ!{C.RESET}\n")
+        print(f"  {C.GOLD}✅ ကီးအားလုံး ကလစ်ဘုတ်သို့ ကူးယူပြီးပါပြီ!{C.RESET}\n")
     except:
         pass
-    
-    print(f"  {C.P}📖 အသုံးပြုနည်း{C.RESET}")
+
+    print(f"  {C.CYAN}📖 အသုံးပြုနည်း{C.RESET}")
     print(f"  ───────────────────────────────────────────────")
     print(f"  ၁။ V2RayNG / NekoBox ဖွင့်ပါ → + → Import from Clipboard")
     print(f"  ၂။ ဆာဗာကိုရွေးပြီး Connect လုပ်ပါ ✅")
@@ -248,7 +272,7 @@ def fav_menu():
         if os.path.exists(FAV_FILE):
             try: favs = json.load(open(FAV_FILE))
             except: pass
-        print(f"  {C.P}{C.BOLD}⭐ အကြိုက်ဆုံးဆာဗာများ  ({len(favs)} ခု){C.RESET}\n")
+        print(f"  {C.GOLD}{C.BOLD}⭐ အကြိုက်ဆုံးဆာဗာများ  ({len(favs)} ခု){C.RESET}\n")
         if not favs:
             print(f"  {C.O}⚠️ မရှိသေးပါ။ ကီးရပါက သိမ်းထားနိုင်ပါတယ်။{C.RESET}\n")
         else:
@@ -257,12 +281,12 @@ def fav_menu():
                 print(f"  [{i}] {flag_display(f.get('name',''))} {pi.get(f.get('proto',''),'⬜')} {f.get('name','')[:45]}")
             print(f"\n  နံပါတ်ရိုက်ပါ = ကီးကူးယူမည်")
         print(f"  [0] ပင်မမီနူးသို့ ပြန်မည်\n")
-        sel = input(f"  {C.P}{C.BOLD}ရွေးချယ်ပါ → {C.RESET}").strip()
+        sel = input(f"  {C.GOLD}{C.BOLD}ရွေးချယ်ပါ → {C.RESET}").strip()
         if sel == "0": break
         if sel.isdigit() and favs:
             idx = int(sel) - 1
             if 0 <= idx < len(favs):
-                print(f"\n  {C.G}{favs[idx]['key']}{C.RESET}\n")
+                print(f"\n  {C.GOLD}{favs[idx]['key']}{C.RESET}\n")
                 try:
                     import subprocess
                     subprocess.run(["termux-clipboard-set", favs[idx]["key"]])
@@ -275,28 +299,29 @@ def main_loop(all_keys):
     ss = [k for k in all_keys if k["proto"] == "SS"]
     vmess = [k for k in all_keys if k["proto"] == "VMESS"]
     trojan = [k for k in all_keys if k["proto"] == "TROJAN"]
-    
+
     while True:
         premium_header()
-        print(f"  {C.P}{C.BOLD}📊 စာရင်းအင်း{C.RESET}")
-        print(f"  ╔════════════════════════════╗")
-        print(f"  ║  🟦 VLESS   {len(vless):>4} ခု           ║")
-        print(f"  ║  🟩 SS      {len(ss):>4} ခု           ║")
-        print(f"  ║  🟧 VMESS   {len(vmess):>4} ခု           ║")
-        print(f"  ║  🟪 TROJAN  {len(trojan):>4} ခု           ║")
-        print(f"  ║  📦 စုစုပေါင်း {len(all_keys):>4} ခု           ║")
-        print(f"  ╚════════════════════════════╝\n")
-        
-        print(f"  {C.P}{C.BOLD}🎯 ပင်မမီနူး{C.RESET}")
-        print(f"  ╔════════════════════════════════════════╗")
-        print(f"  ║  [1] 🟦 VLESS  အမြန်ဆုံး ၅ ခု  [2] 🟩 SS    အမြန်ဆုံး ၅ ခု ║")
-        print(f"  ║  [3] 🏆 အားလုံး အမြန်ဆုံး ၅ ခု  [4] 🇸🇬 အာရှဆာဗာများသာ  ║")
-        print(f"  ║  [5] ⭐ အကြိုက်ဆုံးဆာဗာများ     [6] 🔄 ကီးအသစ်ပြန်ဖတ်မည် ║")
-        print(f"  ║  [0] ❌ ပရိုဂရမ်မှထွက်မည်                      ║")
-        print(f"  ╚════════════════════════════════════════╝\n")
-        
-        sel = input(f"  {C.P}{C.BOLD}ရွေးချယ်ပါ → {C.RESET}").strip()
-        
+
+        print(f"  {C.GOLD}{C.BOLD}📊 စာရင်းအင်း{C.RESET}")
+        print(f"  {C.GOLD}╔════════════════════════════════════════╗{C.RESET}")
+        print(f"  {C.GOLD}║{C.RESET}  🟦 VLESS   {len(vless):>4} ခု                  {C.GOLD}║{C.RESET}")
+        print(f"  {C.GOLD}║{C.RESET}  🟩 SS      {len(ss):>4} ခု                  {C.GOLD}║{C.RESET}")
+        print(f"  {C.GOLD}║{C.RESET}  🟧 VMESS   {len(vmess):>4} ခု                  {C.GOLD}║{C.RESET}")
+        print(f"  {C.GOLD}║{C.RESET}  🟪 TROJAN  {len(trojan):>4} ခု                  {C.GOLD}║{C.RESET}")
+        print(f"  {C.GOLD}║{C.RESET}  📦 စုစုပေါင်း {len(all_keys):>4} ခု                  {C.GOLD}║{C.RESET}")
+        print(f"  {C.GOLD}╚════════════════════════════════════════╝{C.RESET}\n")
+
+        print(f"  {C.GOLD}{C.BOLD}🎯 ပင်မမီနူး{C.RESET}")
+        print(f"  {C.CYAN}╔══════════════════════════════════════════════════════╗{C.RESET}")
+        print(f"  {C.CYAN}║{C.RESET}  [1] 🟦 VLESS  အမြန်ဆုံး ၅ ခု    [2] 🟩 SS    အမြန်ဆုံး ၅ ခု   {C.CYAN}║{C.RESET}")
+        print(f"  {C.CYAN}║{C.RESET}  [3] 🏆 အားလုံး အမြန်ဆုံး ၅ ခု    [4] 🇸🇬 အာရှဆာဗာများသာ      {C.CYAN}║{C.RESET}")
+        print(f"  {C.CYAN}║{C.RESET}  [5] ⭐ အကြိုက်ဆုံးဆာဗာများ       [6] 🔄 ကီးအသစ်ပြန်ဖတ်မည်   {C.CYAN}║{C.RESET}")
+        print(f"  {C.CYAN}║{C.RESET}  [0] ❌ ပရိုဂရမ်မှထွက်မည်                          {C.CYAN}║{C.RESET}")
+        print(f"  {C.CYAN}╚══════════════════════════════════════════════════════╝{C.RESET}\n")
+
+        sel = input(f"  {C.GOLD}{C.BOLD}ရွေးချယ်ပါ → {C.RESET}").strip()
+
         if sel == "1":
             if not vless:
                 print(f"  {C.O}⚠️ VLESS မရှိပါ။ [6] နှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
@@ -304,7 +329,7 @@ def main_loop(all_keys):
                 continue
             data = scan_and_sort(vless)
             show_result_list(data, "🟦 VLESS အမြန်ဆုံး", 5)
-        
+
         elif sel == "2":
             if not ss:
                 print(f"  {C.O}⚠️ SS မရှိပါ။ [6] နှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
@@ -312,7 +337,7 @@ def main_loop(all_keys):
                 continue
             data = scan_and_sort(ss)
             show_result_list(data, "🟩 SS အမြန်ဆုံး", 5)
-        
+
         elif sel == "3":
             if not all_keys:
                 print(f"  {C.O}⚠️ ကီးမရှိပါ။ [6] နှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
@@ -320,7 +345,7 @@ def main_loop(all_keys):
                 continue
             data = scan_and_sort(all_keys)
             show_result_list(data, "🏆 အားလုံးထဲမှ အမြန်ဆုံး", 5)
-        
+
         elif sel == "4":
             if not all_keys:
                 print(f"  {C.O}⚠️ ကီးမရှိပါ။ [6] နှိပ်ပြီး ပြန်ဖတ်ပါ။{C.RESET}\n")
@@ -333,27 +358,27 @@ def main_loop(all_keys):
                 asia = all_keys
             data = scan_and_sort(asia)
             show_result_list(data, "🇸🇬 အာရှဆာဗာများ အမြန်ဆုံး", 5)
-        
+
         elif sel == "5":
             fav_menu()
-        
+
         elif sel == "6":
             premium_header()
-            print(f"  {C.Y}🔄 ကီးအသစ်ပြန်ဖတ်နေသည်...{C.RESET}\n")
+            loading_premium("🔄 ကီးအသစ်ပြန်ဖတ်နေသည်", duration=1.5)
             all_keys = load_all_keys_silent()
             vless = [k for k in all_keys if k["proto"] == "VLESS"]
             ss = [k for k in all_keys if k["proto"] == "SS"]
             vmess = [k for k in all_keys if k["proto"] == "VMESS"]
             trojan = [k for k in all_keys if k["proto"] == "TROJAN"]
-            print(f"  {C.G}✅ အသစ်ဖတ်ပြီးပါပြီ! စုစုပေါင်း: {len(all_keys)} ခု{C.RESET}\n")
+            print(f"  {C.GOLD}✅ အသစ်ဖတ်ပြီးပါပြီ! စုစုပေါင်း: {len(all_keys)} ခု{C.RESET}\n")
             time.sleep(1.2)
-        
+
         elif sel == "0":
             premium_header()
-            print(f"  {C.P}✨ ကျေးဇူးပါ! အကောင်းဆုံးဆာဗာရှာနိုင်ပါစေ ✨{C.RESET}")
+            print(f"  {C.GOLD}✨ ကျေးဇူးပါ! အကောင်းဆုံးဆာဗာရှာနိုင်ပါစေ ✨{C.RESET}")
             print(f"  📘 Facebook: {FACEBOOK_LINK}\n")
             sys.exit(0)
-        
+
         else:
             print(f"  {C.R}❌ မှားနေပါတယ် 0-6 ကြားသာရွေးပါ{C.RESET}\n")
             time.sleep(1)
@@ -361,14 +386,14 @@ def main_loop(all_keys):
 if __name__ == "__main__":
     try:
         premium_header()
-        print(f"  {C.Y}⚡ ကီးများကို နောက်ခံမှ ရယူနေသည်...{C.RESET}\n")
+        loading_premium("⚡ ကီးများကို နောက်ခံမှ ရယူနေသည်", duration=1.5)
         all_keys = load_all_keys_silent()
         time.sleep(0.5)
         main_loop(all_keys)
     except KeyboardInterrupt:
         premium_header()
-        print(f"  {C.P}👑 ပရိုဂရမ်မှ ထွက်ပါပြီ{C.RESET}\n")
+        print(f"  {C.GOLD}👑 ပရိုဂရမ်မှ ထွက်ပါပြီ{C.RESET}\n")
     except Exception as e:
         print(f"\n  {C.R}❌ အမှား: {e}{C.RESET}\n")
         input(f"  ဆက်ရန် {C.Y}Enter{C.RESET}")
-    
+                       
