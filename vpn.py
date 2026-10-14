@@ -1,12 +1,39 @@
 #!/usr/bin/env python3
-import urllib.request, base64, os, socket, time
+# ╔══════════════════════════════════════════════════════════╗
+# ║     🚀 ULTIMATE VPN KEY FINDER — Smart Edition           ║
+# ║   Auto-Scan • Fastest Top 10 • Smart Save • Quick View    ║
+# ╚══════════════════════════════════════════════════════════╝
+import urllib.request, base64, os, socket, time, datetime
 
-G = "\033[92m"
-Y = "\033[93m"
-R = "\033[91m"
-RS = "\033[0m"
+# ─── Theme Colors ───
+BLU = "\033[94m"
+CYN = "\033[96m"
+GRN = "\033[92m"
+YEL = "\033[93m"
+RED = "\033[91m"
+MAG = "\033[95m"
+BLD = "\033[1m"
+RST = "\033[0m"
+
+# ─── Data Files ───
+SAVE_VLESS = "best_vless.txt"
+SAVE_SS    = "best_ss.txt"
 
 def clear(): os.system("clear")
+
+def line(char="═", n=58): return char * n
+
+def header(subtitle=""):
+    clear()
+    print(f"{CYN}{BLD}╔{line()}╗{RST}")
+    print(f"{CYN}{BLD}║{RST}  🚀 {MAG}{BLD}ULTIMATE VPN KEY FINDER{RST}", end="")
+    print(f"{' '*(26-len(subtitle))}{CYN}{BLD}║{RST}")
+    if subtitle:
+        print(f"{CYN}{BLD}║{RST}  {subtitle}{' '*(56-len(subtitle))}{CYN}{BLD}║{RST}")
+    print(f"{CYN}{BLD}╠{line()}╣{RST}")
+
+def footer():
+    print(f"{CYN}{BLD}╚{line()}╝{RST}")
 
 def ping_test(host, port):
     try:
@@ -16,23 +43,32 @@ def ping_test(host, port):
         s.connect((host, int(port)))
         ms = int((time.time() - start) * 1000)
         s.close()
-        if ms < 150: return f"{G}{ms}ms ✅{RS}", ms
-        elif ms < 300: return f"{Y}{ms}ms ⚡{RS}", ms
-        else: return f"{R}{ms}ms 📍{RS}", ms
+        if ms < 100:   return f"{GRN}🌟 {ms}ms  EXCELLENT{RST}", ms
+        elif ms < 150: return f"{GRN}✅ {ms}ms    GREAT{RST}", ms
+        elif ms < 250: return f"{YEL}⚡ {ms}ms     GOOD{RST}", ms
+        elif ms < 400: return f"{YEL}📍 {ms}ms     FAIR{RST}", ms
+        else:           return f"{RED}⚠️ {ms}ms     SLOW{RST}", ms
     except: return None, 9999
 
-def get_text(url):
+def fetch_url(url):
     try:
         req = urllib.request.Request(
             url,
             headers={"User-Agent": "Mozilla/5.0"}
         )
-        with urllib.request.urlopen(req, timeout=15) as r:
-            return r.read().decode("utf-8", errors="ignore")
-    except Exception as e:
-        return None
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.read().decode("utf-8", errors="ignore")
+    except: return None
 
-def parse_keys(text, fmt):
+def extract_name(line):
+    if "#" not in line: return "Unknown Server"
+    try:
+        from urllib.parse import unquote
+        return unquote(line.split("#")[-1])[:35].strip()
+    except:
+        return line.split("#")[-1][:35].strip() or "Unknown Server"
+
+def parse_configs(text, fmt):
     keys = []
     if not text: return keys
     try:
@@ -41,109 +77,172 @@ def parse_keys(text, fmt):
         for line in text.splitlines():
             line = line.strip()
             if not line or line.startswith("#"): continue
+            name = extract_name(line)
             if line.startswith("vless://"):
-                keys.append({"proto": "VLESS", "key": line, "ping": "--ms", "ms": 9999, "alive": False})
+                keys.append({"proto": "VLESS", "name": name, "key": line, "ping": "--", "ms": 9999})
             elif line.startswith("ss://"):
-                keys.append({"proto": "SS", "key": line, "ping": "--ms", "ms": 9999, "alive": False})
+                keys.append({"proto": "SS", "name": name, "key": line, "ping": "--", "ms": 9999})
     except: pass
     return keys
 
-def check_alive_and_sort(keys):
-    """အရင်အကုန်စစ် → အလုပ်လုပ်တဲ့ဟာပဲရွေး → Ping အနည်းဆုံးအစီအစဉ်စီပြီး ပြန်ပေး"""
-    clear()
-    total = len(keys)
-    print(f"Checking {total} keys...\n")
-    alive = []
+def save_top10(proto, top10):
+    try:
+        fname = SAVE_VLESS if proto == "VLESS" else SAVE_SS
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(fname, "w", encoding="utf-8") as f:
+            f.write(f"{'═'*60}\n")
+            f.write(f"  🏆 TOP 10 FASTEST {proto} SERVERS\n")
+            f.write(f"  📅 Updated: {now}\n")
+            f.write(f"{'═'*60}\n\n")
+            for idx, item in enumerate(top10, 1):
+                f.write(f"  [{idx}] {item['ping']} | {item['name']}\n")
+                f.write(f"      {item['key']}\n\n")
+        return True, fname, now
+    except: return False, "", ""
+
+def load_saved_data(proto):
+    fname = SAVE_VLESS if proto == "VLESS" else SAVE_SS
+    if not os.path.exists(fname): return None, fname, ""
+    try:
+        with open(fname, "r", encoding="utf-8") as f:
+            return f.read(), fname, os.path.getmtime(fname)
+    except: return None, fname, ""
+
+def scan_and_pick_best(proto, all_keys):
+    header(f"🔍 SCANNING {proto} SERVERS...")
+    servers = [k for k in all_keys if k["proto"] == proto]
+    total = len(servers)
     
-    for i, k in enumerate(keys, 1):
-        print(f"  [{i}/{total}] Checking...", end="\r")
+    if total == 0:
+        print(f"\n  {RED}⚠️ No {proto} servers available right now{RST}\n")
+        footer()
+        input("  Back → Enter")
+        return None
+    
+    print(f"  📦 Total: {BLU}{total}{RST} servers")
+    print(f"  🔄 Testing connection speed...\n")
+    
+    alive = []
+    start_time = time.time()
+    
+    for idx, svr in enumerate(servers, 1):
+        print(f"    [{idx}/{total}] {svr['name'][:28]:<28}", end="\r")
         try:
             from urllib.parse import urlparse
-            p = urlparse(k["key"])
+            p = urlparse(svr["key"])
             ping_str, ms = ping_test(p.hostname, p.port)
             if ping_str:
-                k["ping"] = ping_str
-                k["ms"] = ms
-                k["alive"] = True
-                alive.append(k)
+                svr["ping"] = ping_str
+                svr["ms"] = ms
+                alive.append(svr.copy())
         except: pass
     
-    alive_sorted = sorted(alive, key=lambda x: x["ms"])
-    return alive_sorted, total
-
-def display_results(alive, total):
-    clear()
-    print(f"{G}✅ Done!{RS}  Working: {len(alive)}/{total}\n")
-    if not alive:
-        print(f"{R}No working keys found{RS}\n")
-        return
+    elapsed = int(time.time() - start_time)
+    top10 = sorted(alive, key=lambda x: x["ms"])[:10]
     
-    print(f"⚡ Fastest first:\n")
-    for i, k in enumerate(alive, 1):
-        print(f"{i:02d} | {k['ping']} | {k['key']}")
-    print()
+    header(f"🏆 TOP 10 FASTEST {proto} SERVERS")
+    print(f"  📊 Scanned: {BLU}{total}{RST} | ✅ Online: {GRN}{len(alive)}{RST} | ⏱️ Done in {elapsed}s\n")
+    
+    if not top10:
+        print(f"  {RED}😢 No working servers found{RST}")
+        print(f"  {YEL}  Check your internet or try again later{RST}\n")
+        footer()
+        input("  Back → Enter")
+        return None
+    
+    for idx, svr in enumerate(top10, 1):
+        print(f"  {BLU}{BLD}[{idx:02d}]{RST}  {svr['ping']}")
+        print(f"       {MAG}{svr['name']}{RST}")
+        print(f"       {svr['key']}\n")
+    
+    ok, fname, stamp = save_top10(proto, top10)
+    if ok:
+        print(f"  💾 {GRN}✓ Saved to: {fname}{RST}")
+        print(f"  📅 Time: {stamp}\n")
+    footer()
+    return top10
 
-def main():
-    clear()
-    print("===== VPN KEY FINDER =====\n")
+def view_saved(proto):
+    content, fname, mtime = load_saved_data(proto)
+    header(f"📂 SAVED {proto} — Top 10 Fastest")
+    if not content:
+        print(f"\n  {YEL}⚠️ No saved data yet!{RST}")
+        print(f"  First run: [1] Scan & Find Best\n")
+    else:
+        print(f"  📄 File: {fname}\n")
+        print(content)
+    footer()
+
+def boot_loader():
+    header("LOADING SERVER SOURCES...")
+    print(f"  📡 Connecting to server lists...\n")
     
     sources = [
-        ("Shadowmere", "https://shadowmere.xyz/api/b64sub/", "b64"),
+        ("Shadowmere",  "https://shadowmere.xyz/api/b64sub/",          "b64"),
         ("V2Ray-Vault", "https://raw.githubusercontent.com/Argh73/V2Ray-Vault/main/data/sub/all_configs.txt", "txt"),
-        ("V2Nodes", "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
+        ("V2Nodes",     "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
     ]
     
-    all_vless = []
-    all_ss = []
+    vless_list = []
+    ss_list = []
     
-    print("Loading keys...\n")
     for name, url, fmt in sources:
-        text = get_text(url)
+        print(f"    🔄 {name:<15}", end=" ")
+        text = fetch_url(url)
         if text:
-            keys = parse_keys(text, fmt)
+            keys = parse_configs(text, fmt)
+            v_cnt = sum(1 for k in keys if k["proto"] == "VLESS")
+            s_cnt = sum(1 for k in keys if k["proto"] == "SS")
+            print(f"{GRN}✓{RST}  VLESS:{v_cnt}  SS:{s_cnt}")
             for k in keys:
-                if k["proto"] == "VLESS": all_vless.append(k)
-                else: all_ss.append(k)
+                if k["proto"] == "VLESS": vless_list.append(k)
+                else: ss_list.append(k)
+        else:
+            print(f"{RED}✗{RST}")
     
-    print(f"VLESS: {len(all_vless)} loaded")
-    print(f"SS:    {len(all_ss)} loaded\n")
-    input("Ready → Enter")
+    print(f"\n  ✅ Ready!  VLESS: {GRN}{len(vless_list)}{RST}  |  SS: {GRN}{len(ss_list)}{RST}\n")
+    footer()
+    time.sleep(1.5)
+    return vless_list, ss_list
+
+def main():
+    vless_data, ss_data = boot_loader()
     
     while True:
-        clear()
-        print("===== VPN KEY FINDER =====")
-        print(f"  VLESS: {len(all_vless)}  |  SS: {len(all_ss)}")
-        print()
-        print("  1. Check VLESS → Show Working + Ping")
-        print("  2. Check SS   → Show Working + Ping")
-        print("  0. Exit")
-        print("===========================")
+        header("MAIN MENU")
+        print(f"  🟦 {BLU}VLESS SERVERS{RST}        🟧 {YEL}SS SERVERS{RST}")
+        print(f"  {line('-',16)}        {line('-',16)}")
+        print(f"   [1] 🔍 Scan & Best      [3] 🔍 Scan & Best")
+        print(f"   [2] 📂 View Saved       [4] 📂 View Saved")
+        print(f"  {line('-',40)}")
+        print(f"   [0] ❌ Exit")
+        print(f"  {line('-',40)}")
+        footer()
         
-        c = input("\nChoose → ").strip()
+        choice = input(f"\n  {MAG}Your choice → {RST}").strip()
         
-        if c == "0":
-            print("\n👋 Bye!")
+        if choice == "0":
+            header("GOODBYE! 👋")
+            print(f"\n  Thank you for using Ultimate VPN Key Finder!")
+            print(f"  💡 Your best servers are always auto-saved\n")
+            footer()
             break
-        elif c == "1":
-            if not all_vless:
-                print(f"\n{R}No VLESS keys{RS}")
-                input("Back → Enter")
-                continue
-            alive, total = check_alive_and_sort(all_vless)
-            display_results(alive, total)
-            input("Back → Enter")
-        elif c == "2":
-            if not all_ss:
-                print(f"\n{R}No SS keys{RS}")
-                input("Back → Enter")
-                continue
-            alive, total = check_alive_and_sort(all_ss)
-            display_results(alive, total)
-            input("Back → Enter")
+        elif choice == "1":
+            scan_and_pick_best("VLESS", vless_data)
+            input(f"\n  {MAG}Back to Menu → Enter{RST}")
+        elif choice == "2":
+            view_saved("VLESS")
+            input(f"\n  {MAG}Back to Menu → Enter{RST}")
+        elif choice == "3":
+            scan_and_pick_best("SS", ss_data)
+            input(f"\n  {MAG}Back to Menu → Enter{RST}")
+        elif choice == "4":
+            view_saved("SS")
+            input(f"\n  {MAG}Back to Menu → Enter{RST}")
         else:
-            print(f"\n{R}Wrong choice{RS}")
-            input("OK → Enter")
+            print(f"\n  {RED}⚠️ Invalid choice! Try again{RST}")
+            time.sleep(1)
 
 if __name__ == "__main__":
     main()
-        
+    
