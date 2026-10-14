@@ -34,10 +34,33 @@ def clear():
 def open_admin_link():
     clear()
     print(PUR + "="*60 + RST)
-    print(PUR + "|        FACEBOOK PAGE LINK                |" + RST)
+    print(PUR + "|        📘 ADMIN FACEBOOK               |" + RST)
     print(PUR + "="*60 + RST)
-    print(f"\n  {CYN}{ADMIN_LINK}{RST}")
-    print(f"\n  Copy the link above to open in browser")
+    print(f"\n  🔗 LINK: {CYN}{ADMIN_LINK}{RST}")
+    print(f"\n  🌐 Opening Facebook...")
+    
+    # Try to open directly
+    opened = False
+    try:
+        subprocess.run(['termux-open-url', ADMIN_LINK], capture_output=True, timeout=5)
+        opened = True
+    except:
+        pass
+    
+    if not opened:
+        try:
+            subprocess.run(['am', 'start', '-a', 'android.intent.action.VIEW', '-d', ADMIN_LINK], 
+                          capture_output=True, timeout=5)
+            opened = True
+        except:
+            pass
+    
+    if opened:
+        print(f"  {GRN}✅ Opening in your browser/Facebook app{RST}")
+    else:
+        print(f"  {YEL}⚠️  Could not open automatically{RST}")
+        print(f"  💡 Please copy the link above and open it manually")
+    
     input(f"\n  Press Enter to go back...")
 
 # ================== SOURCES ==================
@@ -188,7 +211,6 @@ def scan_and_show(keys, title, count=10):
     print(f"\n{GRN}✅ FOUND: {len(results)} working servers{RST}")
     print(PUR + "="*70 + RST)
     
-    # ============== KEY FULLY DISPLAYED HERE ==============
     for idx, s in enumerate(top, 1):
         stars = "*"*s["sc"] + "-"*(5-s["sc"])
         print(f"\n{PUR}[{idx}] {s['country']}  |  Ping: {CYN}{s['ms']}ms{RST}  |  {stars}  {GRN}{s['lvl']}{RST}")
@@ -282,7 +304,7 @@ def main():
         print(f"  [3] Show SS Servers (Full Key)")
         print(f"  [4] Find Best Server (Full Key)")
         print(f"  [5] My Favorites")
-        print(f"  [6] Admin Facebook Link")
+        print(f"  [6] Open Facebook Page")
         print(PUR + "-"*70 + RST)
         print(f"  [0] Exit")
         print(PUR + "="*70 + RST)
