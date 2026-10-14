@@ -30,7 +30,6 @@ def get_text(url):
         with urllib.request.urlopen(req, timeout=15) as r:
             return r.read().decode("utf-8", errors="ignore")
     except Exception as e:
-        print(f"   ❌ {str(e)[:50]}")
         return None
 
 def parse_keys(text, fmt):
@@ -43,18 +42,21 @@ def parse_keys(text, fmt):
             line = line.strip()
             if not line or line.startswith("#"): continue
             if line.startswith("vless://"):
-                keys.append({"proto": "VLESS", "key": line, "ping": "--ms", "ms": 9999})
+                keys.append({"proto": "VLESS", "key": line, "ping": "--ms", "ms": 9999, "alive": False})
             elif line.startswith("ss://"):
-                keys.append({"proto": "SS", "key": line, "ping": "--ms", "ms": 9999})
-    except Exception as e:
-        print(f"   Parse: {e}")
+                keys.append({"proto": "SS", "key": line, "ping": "--ms", "ms": 9999, "alive": False})
+    except: pass
     return keys
 
-def show_and_check(keys):
+def check_alive_and_sort(keys):
+    """အရင်အကုန်စစ် → အလုပ်လုပ်တဲ့ဟာပဲရွေး → Ping အနည်းဆုံးအစီအစဉ်စီပြီး ပြန်ပေး"""
     clear()
-    print(f"Total: {len(keys)} keys\n")
-    working = []
+    total = len(keys)
+    print(f"Checking {total} keys...\n")
+    alive = []
+    
     for i, k in enumerate(keys, 1):
+        print(f"  [{i}/{total}] Checking...", end="\r")
         try:
             from urllib.parse import urlparse
             p = urlparse(k["key"])
@@ -62,12 +64,24 @@ def show_and_check(keys):
             if ping_str:
                 k["ping"] = ping_str
                 k["ms"] = ms
-                working.append(k)
-            print(f"{i:02d} | {k['ping']} | {k['key']}")
-        except:
-            print(f"{i:02d} | ❌ | {k['key'][:60]}...")
-    print(f"\n{G}✅ Working: {len(working)}/{len(keys)}{RS}")
-    return working
+                k["alive"] = True
+                alive.append(k)
+        except: pass
+    
+    alive_sorted = sorted(alive, key=lambda x: x["ms"])
+    return alive_sorted, total
+
+def display_results(alive, total):
+    clear()
+    print(f"{G}✅ Done!{RS}  Working: {len(alive)}/{total}\n")
+    if not alive:
+        print(f"{R}No working keys found{RS}\n")
+        return
+    
+    print(f"⚡ Fastest first:\n")
+    for i, k in enumerate(alive, 1):
+        print(f"{i:02d} | {k['ping']} | {k['key']}")
+    print()
 
 def main():
     clear()
@@ -82,40 +96,26 @@ def main():
     all_vless = []
     all_ss = []
     
-    print("Loading from sources...\n")
+    print("Loading keys...\n")
     for name, url, fmt in sources:
-        print(f"🔄 {name}...", end=" ", flush=True)
         text = get_text(url)
         if text:
             keys = parse_keys(text, fmt)
-            vless_count = sum(1 for k in keys if k["proto"] == "VLESS")
-            ss_count = sum(1 for k in keys if k["proto"] == "SS")
-            print(f"{G}OK ✓{RS}  VLESS:{vless_count}  SS:{ss_count}")
             for k in keys:
-                if k["proto"] == "VLESS":
-                    all_vless.append(k)
-                else:
-                    all_ss.append(k)
-        else:
-            print(f"{R}SKIP ✗{RS}")
+                if k["proto"] == "VLESS": all_vless.append(k)
+                else: all_ss.append(k)
     
-    print(f"\n{Y}─── Summary ───{RS}")
-    print(f"VLESS: {G}{len(all_vless)}{RS} keys")
-    print(f"SS:    {G}{len(all_ss)}{RS} keys\n")
-    
-    if len(all_vless) == 0 and len(all_ss) == 0:
-        print(f"{R}⚠️  No keys found{RS}")
-        input("Press Enter to exit")
-        return
+    print(f"VLESS: {len(all_vless)} loaded")
+    print(f"SS:    {len(all_ss)} loaded\n")
+    input("Ready → Enter")
     
     while True:
         clear()
         print("===== VPN KEY FINDER =====")
-        print(f"  VLESS: {len(all_vless)} keys")
-        print(f"  SS:    {len(all_ss)} keys")
+        print(f"  VLESS: {len(all_vless)}  |  SS: {len(all_ss)}")
         print()
-        print("  1. Show VLESS + Ping")
-        print("  2. Show SS + Ping")
+        print("  1. Check VLESS → Show Working + Ping")
+        print("  2. Check SS   → Show Working + Ping")
         print("  0. Exit")
         print("===========================")
         
@@ -129,15 +129,17 @@ def main():
                 print(f"\n{R}No VLESS keys{RS}")
                 input("Back → Enter")
                 continue
-            show_and_check(all_vless)
-            input("\nBack → Enter")
+            alive, total = check_alive_and_sort(all_vless)
+            display_results(alive, total)
+            input("Back → Enter")
         elif c == "2":
             if not all_ss:
                 print(f"\n{R}No SS keys{RS}")
                 input("Back → Enter")
                 continue
-            show_and_check(all_ss)
-            input("\nBack → Enter")
+            alive, total = check_alive_and_sort(all_ss)
+            display_results(alive, total)
+            input("Back → Enter")
         else:
             print(f"\n{R}Wrong choice{RS}")
             input("OK → Enter")
