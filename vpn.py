@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-# ==========================================================
-#    🚀 VPN Key Finder
-#    Sources: Only your 4 links
-# ==========================================================
+# ╔══════════════════════════════════════════════════════════╗
+# ║          🚀 Ultimate VPN Key Finder                      ║
+# ║              — Dream Edition ✨                           ║
+# ╚══════════════════════════════════════════════════════════╝
 import urllib.request, base64, socket, time, os, datetime
 
-# Colors
+# 🎨 COLORS
 BLU = "\033[94m"
+CYN = "\033[96m"
 GRN = "\033[92m"
 YEL = "\033[93m"
 RED = "\033[91m"
+MAG = "\033[95m"
+BLD = "\033[1m"
+DIM = "\033[2m"
 RST = "\033[0m"
 
 def clear(): os.system("clear")
-def line(): return "=" * 50
+def hline(): return "═" * 58
+def stars(n): return "⭐" * n + "☆" * (5-n)
 
 # ==========================================================
 # 🌐 YOUR SOURCES - DO NOT CHANGE
@@ -26,32 +31,27 @@ SOURCES = [
 ]
 
 # ==========================================================
-# 📡 Network Detection
+# 📡 NETWORK DETECTION
 # ==========================================================
-def get_network_type():
+def get_network():
     try:
         import subprocess
-        result = subprocess.run(['ip', 'link'], capture_output=True, text=True, timeout=3)
-        if 'wlan' in result.stdout.lower() or 'wlp' in result.stdout.lower():
-            return "WiFi"
-        else:
-            return "Mobile Data"
+        r = subprocess.run(['ip','link'], capture_output=True, text=True, timeout=3)
+        if 'wlan' in r.stdout.lower() or 'wlp' in r.stdout.lower():
+            return f"📡 WiFi"
+        return f"📱 Mobile Data"
     except:
-        return "Unknown"
+        return "❓ Unknown"
 
 # ==========================================================
-# 🔄 Fetch & Parse
+# 🔄 FETCH & PARSE
 # ==========================================================
 def fetch(url):
     try:
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "Mozilla/5.0 (Android; Mobile)"}
-        )
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=20) as r:
             return r.read().decode("utf-8", errors="ignore")
-    except Exception as e:
-        print(f"  {RED}✗{RST} Failed: {str(e)[:40]}")
+    except:
         return None
 
 def parse(text, fmt):
@@ -67,15 +67,14 @@ def parse(text, fmt):
             if "#" in line:
                 try:
                     from urllib.parse import unquote
-                    name = unquote(line.split("#")[-1])[:35]
+                    name = unquote(line.split("#")[-1])[:38]
                 except:
-                    name = line.split("#")[-1][:35]
+                    name = line.split("#")[-1][:38]
             if line.startswith("vless://"):
                 keys.append({"type": "VLESS", "name": name, "url": line})
             elif line.startswith("ss://"):
                 keys.append({"type": "SS", "name": name, "url": line})
-    except Exception as e:
-        print(f"  Parse error: {e}")
+    except: pass
     return keys
 
 def ping_test(url):
@@ -90,148 +89,165 @@ def ping_test(url):
         s.connect((host, int(port)))
         ms = int((time.time() - start) * 1000)
         s.close()
-        if ms < 100:
-            rating = f"{GRN}Excellent{RST} 🚀"
-        elif ms < 200:
-            rating = f"{GRN}Good{RST} ✅"
-        elif ms < 350:
-            rating = f"{YEL}Fair{RST} ⚡"
+        if ms < 80:
+            level = f"{GRN}🚀 Fast{RST}"
+            score = 5
+        elif ms < 150:
+            level = f"{GRN}✅ Good{RST}"
+            score = 4
+        elif ms < 250:
+            level = f"{YEL}⚡ Normal{RST}"
+            score = 3
+        elif ms < 400:
+            level = f"{YEL}⚠️ Slow{RST}"
+            score = 2
         else:
-            rating = f"{RED}Slow{RST} 🐢"
-        return True, ms, rating
+            level = f"{RED}🐢 Very Slow{RST}"
+            score = 1
+        return True, ms, level, score
     except:
-        return False, 9999, "Unreachable ❌"
+        return False, 9999, f"{RED}❌ Offline{RST}", 0
 
 # ==========================================================
-# 📥 Load All Keys
+# 📥 LOAD SOURCES
 # ==========================================================
-def load_all():
-    all_vless = []
-    all_ss = []
-    print(f"\n{BLU}🔄 Loading {len(SOURCES)} sources...{RST}\n")
+def load_sources():
+    vless, ss = [], []
+    print(f"\n{CYN}🔄 Loading Sources...{RST}\n")
     for name, url, fmt in SOURCES:
-        print(f"  {name:<20}", end=" ")
+        print(f"  {name:<18}", end=" ")
         text = fetch(url)
         if text:
             keys = parse(text, fmt)
-            v = sum(1 for k in keys if k["type"] == "VLESS")
-            s = sum(1 for k in keys if k["type"] == "SS")
-            print(f"{GRN}✓{RST}  VLESS: {v}  SS: {s}")
+            v_count = sum(1 for k in keys if k["type"]=="VLESS")
+            s_count = sum(1 for k in keys if k["type"]=="SS")
+            print(f"{GRN}✓{RST}  VLESS: {v_count}  SS: {s_count}")
             for k in keys:
-                if k["type"] == "VLESS":
-                    all_vless.append(k)
-                else:
-                    all_ss.append(k)
+                if k["type"]=="VLESS": vless.append(k)
+                else: ss.append(k)
         else:
             print(f"{RED}✗ Failed{RST}")
     print()
-    return all_vless, all_ss
+    return vless, ss
 
 # ==========================================================
-# 🔍 Scan & Show
+# 🔍 SCAN & SHOW
 # ==========================================================
-def show_results(keys):
+def scan_and_show(keys):
     if not keys:
-        print(f"{RED}No keys found!{RST}")
+        print(f"\n{RED}⚠️ No keys found. Load sources first!{RST}")
+        time.sleep(1.5)
         return
-    
     results = []
-    print(f"\n{BLU}Testing {len(keys)} servers...{RST}\n")
-    
+    print(f"\n{CYN}🧪 Testing {len(keys)} servers...{RST}\n")
     for i, k in enumerate(keys, 1):
         print(f"  [{i}/{len(keys)}] {k['name'][:35]:<35}", end="\r")
-        ok, ms, rating = ping_test(k["url"])
+        ok, ms, level, score = ping_test(k["url"])
         if ok:
             k["ms"] = ms
-            k["rating"] = rating
+            k["level"] = level
+            k["score"] = score
             results.append(k)
-    
     results.sort(key=lambda x: x["ms"])
+    print("\n" * 2)
     
-    print(f"\n\n{line()}")
-    print(f"  🎉 Found {len(results)} working servers")
-    print(f"{line()}\n")
+    if not results:
+        print(f"{RED}❌ No working servers found{RST}")
+        time.sleep(2)
+        return
     
-    for i, k in enumerate(results, 1):
-        print(f"  [{i}] {k['rating']}  Ping: {k['ms']}ms")
-        print(f"      📌 {k['name']}")
-        print(f"      🔑 {k['url']}\n")
+    print(f"{BLD}{BLU}┌{hline()}┐{RST}")
+    print(f"{BLD}{BLU}│{RST}{MAG}{BLD}  🎉 Found {len(results)} Working Servers{' '*(28-len(str(len(results))))}{BLD}{BLU}│{RST}")
+    print(f"{BLD}{BLU}├{hline()}┤{RST}")
     
+    for i, s in enumerate(results, 1):
+        print(f"  [{i}] {s['level']}  Ping: {s['ms']}ms  {stars(s['score'])}")
+        print(f"      📌 {BLD}{s['name']}{RST}")
+        print(f"      🔑 {s['url'][:75]}...")
+        print()
+    
+    # Save
     with open("working_keys.txt", "w", encoding="utf-8") as f:
-        f.write(f"Updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"Network: {get_network_type()}\n")
-        f.write(f"Total working: {len(results)}\n\n")
-        for k in results:
-            f.write(f"{k['url']}\n")
+        f.write("="*50 + "\n")
+        f.write("🚀 Ultimate VPN Key Finder — Dream Edition ✨\n")
+        f.write("="*50 + "\n")
+        f.write(f"Updated : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Network : {get_network()}\n")
+        f.write(f"Total   : {len(results)} servers\n")
+        f.write("="*50 + "\n\n")
+        for s in results:
+            f.write(f"{s['url']}\n")
     
-    print(f"{GRN}✅ Saved to: working_keys.txt{RST}")
-    input("\nPress Enter to go back...")
+    print(f"{BLD}{BLU}└{hline()}┘{RST}")
+    print(f"\n{GRN}✅ Saved → working_keys.txt{RST}")
+    input(f"\n{CYN}Press Enter to return...{RST}")
 
 # ==========================================================
-# 📋 MAIN MENU
+# 📄 VIEW SAVED
+# ==========================================================
+def view_saved():
+    clear()
+    print(f"{BLD}{MAG}📄 Saved Keys{RST}\n")
+    if not os.path.exists("working_keys.txt"):
+        print(f"{RED}File not found! Run a scan first.{RST}")
+        time.sleep(2)
+        return
+    with open("working_keys.txt", "r", encoding="utf-8") as f:
+        print(f.read())
+    input(f"\n{CYN}Press Enter to return...{RST}")
+
+# ==========================================================
+# 🏠 MAIN MENU
 # ==========================================================
 def main():
     vless_data, ss_data = [], []
-    network = get_network_type()
-    
     while True:
         clear()
-        print(f"{BLU}{line()}{RST}")
-        print(f"  🚀 VPN Key Finder")
-        print(f"{BLU}{line()}{RST}")
-        print(f"  📡 Network: {network}")
-        print(f"  📦 Sources: {len(SOURCES)}")
-        if vless_data or ss_data:
-            print(f"  🟦 VLESS: {len(vless_data)} keys")
-            print(f"  🟧 SS:    {len(ss_data)} keys")
-        print(f"{BLU}{line()}{RST}\n")
-        
-        print("  [1] 🔄 Load All Sources")
-        print("  [2] 🟦 Find & Test VLESS Keys")
-        print("  [3] 🟧 Find & Test SS Keys")
-        print("  [4] 📄 View Saved Keys")
-        print("  [0] ❌ Exit")
-        print()
-        
-        choice = input("  Choose → ").strip()
+        print(f"{BLD}{MAG}╔{hline()}╗{RST}")
+        print(f"{BLD}{MAG}║{RST}{BLD}        🚀 Ultimate VPN Key Finder{RST}{' '*(18)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}{DIM}             — Dream Edition ✨{' '*(24)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}╠{hline()}╣{RST}")
+        net = get_network()
+        print(f"{BLD}{MAG}║{RST}  📡 Network: {net}{' '*(42-len(net))}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}  📦 Sources: {len(SOURCES)}{' '*(44)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}  🟦 VLESS: {len(vless_data)}{' '*(45-len(str(len(vless_data))))}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}  🟧 SS:    {len(ss_data)}{' '*(45-len(str(len(ss_data))))}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}╠{hline()}╣{RST}")
+        print(f"{BLD}{MAG}║{RST}  {BLD}MENU OPTIONS{RST}{' '*(43)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}╠{hline()}╣{RST}")
+        print(f"{BLD}{MAG}║{RST}  {GRN}[1]{RST} 🔄 Load All Sources{' '*(38)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}  {GRN}[2]{RST} 🟦 Find & Test VLESS Keys{' '*(34)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}  {GRN}[3]{RST} 🟧 Find & Test SS Keys{' '*(38)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}  {GRN}[4]{RST} 📄 View Saved Keys{' '*(39)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}║{RST}  {RED}[0]{RST} ❌ Exit{' '*(49)}{BLD}{MAG}║{RST}")
+        print(f"{BLD}{MAG}╚{hline()}╝{RST}")
+        choice = input(f"\n  {BLD}Choose → {RST}").strip()
         
         if choice == "0":
-            print("\n  👋 Goodbye! ✨\n")
+            clear()
+            print(f"\n{MAG}✨ Thanks for using Dream Edition ✨{RST}")
+            print(f"{CYN}   Stay fast, stay safe! 🚀{RST}\n")
             break
-        
         elif choice == "1":
-            vless_data, ss_data = load_all()
-            input("\n  Done! Press Enter...")
-        
+            vless_data, ss_data = load_sources()
+            input(f"\n{CYN}Done! Press Enter...{RST}")
         elif choice == "2":
             if not vless_data:
-                print(f"\n  {YEL}⚠️ Load sources first (Option 1){RST}")
+                print(f"\n{YEL}⚠️ Load sources first!{RST}")
                 time.sleep(1.5)
                 continue
-            show_results(vless_data)
-        
+            scan_and_show(vless_data)
         elif choice == "3":
             if not ss_data:
-                print(f"\n  {YEL}⚠️ Load sources first (Option 1){RST}")
+                print(f"\n{YEL}⚠️ Load sources first!{RST}")
                 time.sleep(1.5)
                 continue
-            show_results(ss_data)
-        
+            scan_and_show(ss_data)
         elif choice == "4":
-            if os.path.exists("working_keys.txt"):
-                clear()
-                print(f"{BLU}📄 working_keys.txt{RST}\n")
-                with open("working_keys.txt", "r", encoding="utf-8") as f:
-                    print(f.read())
-                input("\nPress Enter...")
-            else:
-                print(f"\n  {RED}No saved file yet. Run a scan first!{RST}")
-                time.sleep(1.5)
-        
+            view_saved()
         else:
-            print(f"\n  {RED}Invalid choice{RST}")
+            print(f"\n{RED}Invalid choice!{RST}")
             time.sleep(1)
 
 if __name__ == "__main__":
     main()
-        
