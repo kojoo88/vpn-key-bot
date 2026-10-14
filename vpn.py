@@ -1,76 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import urllib.request, base64, os, time, re
-import socket
+import urllib.request, base64, os, re, datetime
 
-VERSION = "v1.0 PREMIUM EDITION"
+G = "\033[92m"
+B = "\033[94m"
+Y = "\033[93m"
+R = "\033[91m"
+CY = "\033[96m"
+RS = "\033[0m"
 
-# 🎨 အရောင်များ
-class C:
-    G = "\033[92m"    # အစိမ်း
-    B = "\033[94m"    # အပြာ
-    Y = "\033[93m"    # အဝါ
-    R = "\033[91m"    # အနီ
-    CY = "\033[96m"   # အပြာဖျော့
-    M = "\033[95m"    # ခရမ်းရောင်
-    W = "\033[97m"    # အဖြူ
-    BD = "\033[1m"    # ထူ
-    UL = "\033[4m"    # မျဉ်းကြောင်း
-    RS = "\033[0m"    # ပုံမှန်
+FAVORITES_FILE = "favorites.txt"
+ALL_KEYS_FILE = "all_keys.txt"
 
 def clear():
     os.system("clear")
 
-# 🚀 ခေါင်းစဉ်
-def header():
-    clear()
-    print(f"""{C.M}{C.BD}
-╔══════════════════════════════════════════════════════════════╗
-║   🚀  V P N   K E Y   F I N D E R        {C.CY}{VERSION}         {C.M}║
-║   ═══════════════════════════════════════════════════════════  ║
-║   ✅ Shadowmere B64  •  ⚡ Fast Ping  •  📊 Server Quality    ║
-╚══════════════════════════════════════════════════════════════╝{C.RS}""")
-
-# ✅ အလုပ်လုပ်နေတဲ့ အရင်းအမြစ်
 SOURCES = [
     ("Shadowmere B64", "https://shadowmere.xyz/api/b64sub/", "b64"),
 ]
 
-# ⚡ Ping စစ်ဆေးခြင်း
-def ping_server(host, port, timeout=2):
-    try:
-        start = time.time()
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(timeout)
-            s.connect((host, int(port)))
-        ms = int((time.time() - start) * 1000)
-        if ms < 100:
-            return f"{C.G}{ms} ms ✅ အလွန်မြန်{C.RS}", ms
-        elif ms < 200:
-            return f"{C.Y}{ms} ms ⚡ ကောင်းမွန်{C.RS}", ms
-        elif ms < 400:
-            return f"{C.B}{ms} ms 📍 ပုံမှန်{C.RS}", ms
-        else:
-            return f"{C.R}{ms} ms ⚠️ နှေး{C.RS}", ms
-    except:
-        return f"{C.R}❌ ချိတ်ဆက်မရှိ{C.RS}", 9999
-
-# 🔗 Host နှင့် Port ကို ထုတ်ယူခြင်း
-def extract_host_port(key):
-    try:
-        if key.startswith("ss://"):
-            match = re.search(r"@([^:]+):(\d+)", key)
-            if match:
-                return match.group(1), match.group(2)
-        elif key.startswith("vless://"):
-            match = re.search(r"@([^:]+):(\d+)", key)
-            if match:
-                return match.group(1), match.group(2)
-    except:
-        pass
-    return None, None
-
-# 📡 ဒေတာဖတ်ခြင်း
 def get_text(url):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -79,7 +27,6 @@ def get_text(url):
     except:
         return None
 
-# 🔑 ကီးများဖြတ်ထုတ်ခြင်း
 def parse(text, fmt):
     keys = []
     if not text:
@@ -101,7 +48,7 @@ def parse(text, fmt):
             elif line.startswith("trojan://"):
                 proto = "TROJAN"
             if proto:
-                name = "Unknown Server"
+                name = "Unknown"
                 if "#" in line:
                     name = line.split("#")[-1]
                     try:
@@ -109,100 +56,97 @@ def parse(text, fmt):
                         name = unquote(name)
                     except:
                         pass
-                keys.append({"proto": proto, "name": name, "key": line})
+                now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                keys.append({
+                    "proto": proto,
+                    "name": name,
+                    "key": line,
+                    "added_time": now
+                })
     except:
         pass
     return keys
 
-# 📋 ကီးများပြသခြင်း
-def show_keys(keys, show_ping=False):
+def save_to_file(keys, filename):
+    try:
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write("Updated: " + str(datetime.datetime.now()) + "\n")
+            f.write("Total Keys: " + str(len(keys)) + "\n\n")
+            for k in keys:
+                f.write(k["proto"] + " | " + k["name"] + "\n")
+                f.write(k["key"] + "\n\n")
+        return True
+    except:
+        return False
+
+def load_favorites():
+    favs = []
+    if os.path.exists(FAVORITES_FILE):
+        try:
+            with open(FAVORITES_FILE, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("ss://") or line.startswith("vless://"):
+                        favs.append(line)
+        except:
+            pass
+    return favs
+
+def add_favorite(key_line):
+    try:
+        with open(FAVORITES_FILE, "a", encoding="utf-8") as f:
+            f.write(key_line + "\n")
+        return True
+    except:
+        return False
+
+def search_by_country(keys, keyword):
+    result = []
+    keyword = keyword.upper()
+    for k in keys:
+        if keyword in k["name"].upper():
+            result.append(k)
+    return result
+
+def show(keys, title="ကီးများ"):
     if not keys:
-        print(f"\n{C.R}❌ ကီးမတွေ့ရှိပါ{C.RS}\n")
-        input(f"{C.Y}ပြန်ရန် Enter နှိပ်ပါ → {C.RS}")
+        print()
+        print(R + "❌ ကီးမတွေ့ပါ" + RS)
+        print()
+        input("ပြန်ရန် Enter နှိပ်ပါ")
         return
     
-    print(f"\n{C.G}{C.BD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{C.RS}")
-    print(f"{C.G}✅ စုစုပေါင်း ကီး {len(keys)} ခု တွေ့ရှိပြီးသား{C.RS}")
-    print(f"{C.G}{C.BD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{C.RS}\n")
+    print()
+    print(CY + "=== " + title + " (" + str(len(keys)) + " ခု) ===" + RS)
+    print()
+    for i, k in enumerate(keys[:10], 1):
+        print(str(i) + ". " + k["proto"] + " | " + k["name"])
+        print("   📅 " + k.get("added_time", "အသိမရှိ"))
+        print("   🔑 " + k["key"])
+        print()
     
-    display_count = min(10, len(keys))
-    results = []
+    if len(keys) > 10:
+        print(Y + "... နောက်ထပ် " + str(len(keys)-10) + " ခု ရှိပါသည်" + RS)
+        print()
     
-    for i, k in enumerate(keys[:display_count], 1):
-        ping_info = ""
-        ping_ms = 9999
-        if show_ping:
-            host, port = extract_host_port(k["key"])
-            if host and port:
-                print(f"  ⏳ စစ်ဆေးနေသည်... [{i}/{display_count}]", end="\r")
-                ping_info, ping_ms = ping_server(host, port)
-        
-        results.append({"index": i, "ping_ms": ping_ms, "data": k})
-        
-        print(f"  {C.BD}{str(i).zfill(2)}{C.RS} ｜ {k['proto']:6} ｜ {k['name'][:35]}")
-        if show_ping:
-            print(f"       ⚡ Ping: {ping_info}")
-        print(f"       🔑 {C.CY}{k['key']}{C.RS}\n")
-    
-    if len(keys) > display_count:
-        print(f"{C.Y}... နောက်ထပ် {len(keys)-display_count} ခု ကျန်ရှိနေပါသည်{C.RS}\n")
-    
-    return results
+    input("ပြန်ရန် Enter နှိပ်ပါ")
+    print()
 
-# 🏆 အကောင်းဆုံးဆာဗာရွေးချယ်ခြင်း
-def find_best_server(keys):
-    if not keys:
-        print(f"\n{C.R}❌ ကီးမရှိပါ{C.RS}\n")
-        input(f"{C.Y}ပြန်ရန် Enter နှိပ်ပါ → {C.RS}")
-        return
-    
-    print(f"\n{C.M}{C.BD}🏆 သင့်အတွက် အကောင်းဆုံးဆာဗာကို ရှာဖွေနေသည်...{C.RS}\n")
-    
-    tested = []
-    for i, k in enumerate(keys):
-        host, port = extract_host_port(k["key"])
-        if host and port:
-            print(f"  စစ်ဆေးနေသည်... [{i+1}/{len(keys)}] {k['name'][:25]}", end="\r")
-            _, ms = ping_server(host, port, timeout=1.5)
-            tested.append({"ms": ms, "data": k})
-    
-    if not tested:
-        print(f"\n{C.R}❌ စစ်ဆေး၍မရပါ{C.RS}\n")
-        return
-    
-    tested.sort(key=lambda x: x["ms"])
-    best = tested[0]
-    
-    print(f"\n\n{C.G}{C.BD}🏆 အကောင်းဆုံး ဆာဗာ တွေ့ရှိပါသည်!{C.RS}")
-    print(f"{C.G}{C.BD}═══════════════════════════════════════════════{C.RS}")
-    print(f"   📌 အမည်: {best['data']['name']}")
-    print(f"   🌐 အမျိုးအစား: {best['data']['proto']}")
-    print(f"   ⚡ အနိမ့်ဆုံး Ping: {best['ms']} ms")
-    print(f"   🔑 ကီး: {C.CY}{best['data']['key']}{C.RS}")
-    print(f"{C.G}{C.BD}═══════════════════════════════════════════════{C.RS}\n")
-    
-    input(f"{C.Y}ပြန်ရန် Enter နှိပ်ပါ → {C.RS}")
-
-# 📄 Subscribe လင့်ခ်များပြသခြင်း
-def show_sub_links():
-    print(f"\n{C.CY}{C.BD}📡 Subscribe လင့်ခ်များ{C.RS}")
-    print(f"{C.CY}{C.BD}═══════════════════════════════════════════════{C.RS}\n")
-    for name, url, _ in SOURCES:
-        print(f"   ✅ {name}")
-        print(f"   🔗 {C.W}{url}{C.RS}\n")
-    print(f"{C.Y}💡 အသုံးပြုနည်း- V2RayNG/NekoBox → + → Subscribe → URL ကူးထည့် → Refresh{C.RS}\n")
-    input(f"{C.Y}ပြန်ရန် Enter နှိပ်ပါ → {C.RS}")
-
-# 🚀 အဓိကလုပ်ဆောင်ချက်
 def main():
-    header()
+    clear()
+    print("=" * 50)
+    print("      VPN KEY FINDER")
+    print("=" * 50)
+    print()
+    
     all_keys = []
     seen = set()
     
-    print(f"\n{C.Y}🔍 အရင်းအမြစ်များကို စစ်ဆေးနေသည်...{C.RS}\n")
+    print(Y + "ဒေတာဖတ်နေသည်..." + RS)
+    print()
     
     for name, url, fmt in SOURCES:
-        print(f"  ⏳ {name} ကို ဖတ်နေသည်...", end="\r")
+        print(name + " ... ", end="")
         text = get_text(url)
         ks = parse(text, fmt)
         if ks:
@@ -210,47 +154,113 @@ def main():
                 if k["key"] not in seen:
                     seen.add(k["key"])
                     all_keys.append(k)
-            print(f"  {C.G}✅ {name} — {len(ks)} ကီး ရရှိ{C.RS}")
+            print(G + "OK — " + str(len(ks)) + " ခု" + RS)
         else:
-            print(f"  {C.R}❌ {name} — မရရှိ{C.RS}")
+            print(R + "မရရှိ" + RS)
     
-    print(f"\n{C.G}{C.BD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{C.RS}")
-    print(f"{C.CY}📊 စုစုပေါင်း ကီး အရေအတွက်: {C.G}{len(all_keys)}{C.CY} ခု{C.RS}")
-    print(f"{C.G}{C.BD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{C.RS}\n")
+    print()
+    print(CY + "စုစုပေါင်း ကီး " + str(len(all_keys)) + " ခု ရရှိပြီးသား" + RS)
+    print()
     
-    # 📌 မီနူး
     while True:
-        print(f"{C.M}{C.BD}📌  မီနူး ရွေးချယ်မှု{C.RS}")
-        print(f"{C.CY}══════════════════════════════════════════════{C.RS}")
-        print(f"   {C.BD}[ 1 ]{C.RS}  📋 ကီးအားလုံးကို ကြည့်ရန်")
-        print(f"   {C.BD}[ 2 ]{C.RS}  📋 VLESS ကီးများသာ ကြည့်ရန်")
-        print(f"   {C.BD}[ 3 ]{C.RS}  📋 SS ကီးများသာ ကြည့်ရန်")
-        print(f"   {C.BD}[ 4 ]{C.RS}  ⚡ Ping နှင့်အတူ ကီးများကို ကြည့်ရန်")
-        print(f"   {C.BD}[ 5 ]{C.RS}  🏆 အကောင်းဆုံး ဆာဗာကို ရှာပေးရန်")
-        print(f"   {C.BD}[ 6 ]{C.RS}  📡 Subscribe လင့်ခ်များ ကြည့်ရန်")
-        print(f"   {C.BD}[ 0 ]{C.RS}  ❌ ထွက်ရန်")
-        print(f"{C.CY}═══════════════════════════════════════════════{C.RS}")
+        print("=" * 50)
+        print("📌 မီနူး")
+        print("=" * 50)
+        print("  1. 📋 ကီးအားလုံးကို ပြပါ")
+        print("  2. 📋 VLESS သီးသန့်ပြပါ")
+        print("  3. 📋 SS သီးသန့်ပြပါ")
+        print("  4. 🔍 နိုင်ငံအလိုက် ရှာပါ")
+        print("  5. 💾 ဖိုင်အဖြစ် သိမ်းပါ")
+        print("  6. ⭐ အကြိုက်ဆုံးများကို ကြည့်ပါ")
+        print("  7. ➕ ကီးတစ်ခုကို အကြိုက်ဆုံးထဲ ထည့်ပါ")
+        print("  8. 📡 Subscribe လင့်ခ်ကို ပြပါ")
+        print("  0. ❌ ထွက်ပါ")
+        print("=" * 50)
         
-        choice = input(f"\n{C.B}ရွေးချယ်ပါ → {C.RS}").strip()
+        choice = input("\nရွေးပါ → ").strip()
         
         if choice == "0":
-            print(f"\n{C.CY}👋 ကျေးဇူးတင်ပါတယ်! ပြန်လာတန်းမှာ...{C.RS}\n")
+            print()
+            print("👋 ပါသေး...")
             break
+        
         elif choice == "1":
-            show_keys(all_keys)
+            show(all_keys, "ကီးအားလုံး")
+        
         elif choice == "2":
-            show_keys([k for k in all_keys if k["proto"] == "VLESS"])
+            vless_keys = [k for k in all_keys if k["proto"] == "VLESS"]
+            show(vless_keys, "VLESS ကီးများ")
+        
         elif choice == "3":
-            show_keys([k for k in all_keys if k["proto"] == "SS"])
+            ss_keys = [k for k in all_keys if k["proto"] == "SS"]
+            show(ss_keys, "SS ကီးများ")
+        
         elif choice == "4":
-            show_keys(all_keys, show_ping=True)
+            keyword = input("ရှာမည့်စာလုံး သို့မဟုတ် နိုင်ငံအမည် ရိုက်ထည့်ပါ → ").strip()
+            found = search_by_country(all_keys, keyword)
+            show(found, "'" + keyword + "' ဖြင့် ရှာဖွေမှုရလဒ်")
+        
         elif choice == "5":
-            find_best_server(all_keys)
+            if save_to_file(all_keys, ALL_KEYS_FILE):
+                print()
+                print(G + "✅ " + ALL_KEYS_FILE " အဖြစ် သိမ်းဆည်းပြီးသား" + RS)
+                print()
+            else:
+                print()
+                print(R + "❌ သိမ်းဆည်း၍မရပါ" + RS)
+                print()
+            input("ပြန်ရန် Enter နှိပ်ပါ")
+        
         elif choice == "6":
-            show_sub_links()
+            fav_keys = load_favorites()
+            print()
+            if not fav_keys:
+                print(Y + "⭐ အကြိုက်ဆုံး မရှိသေးပါ" + RS)
+            else:
+                print(CY + "=== အကြိုက်ဆုံး ကီးများ ===" + RS)
+                print()
+                for i, k in enumerate(fav_keys, 1):
+                    print(str(i) + ". " + k)
+            print()
+            input("ပြန်ရန် Enter နှိပ်ပါ")
+        
+        elif choice == "7":
+            idx_str = input("အကြိုက်ဆုံးထဲ ထည့်မည့် ကီးနံပါတ် → ").strip()
+            try:
+                idx = int(idx_str) - 1
+                if 0 <= idx < len(all_keys):
+                    if add_favorite(all_keys[idx]["key"]):
+                        print()
+                        print(G + "✅ အကြိုက်ဆုံးထဲ ထည့်ပြီးသား" + RS)
+                        print()
+                    else:
+                        print()
+                        print(R + "❌ မအောင်မြင်ပါ" + RS)
+                        print()
+                else:
+                    print()
+                    print(R + "❌ နံပါတ်မှားနေပါတယ်" + RS)
+                    print()
+            except:
+                print()
+                print(R + "❌ သင့်လျော်တဲ့နံပါတ်မဟုတ်ပါ" + RS)
+                print()
+            input("ပြန်ရန် Enter နှိပ်ပါ")
+        
+        elif choice == "8":
+            print()
+            print(CY + "📡 Subscribe လင့်ခ်:" + RS)
+            print("https://shadowmere.xyz/api/b64sub/")
+            print()
+            print(Y + "💡 အသုံးပြုနည်း- V2RayNG/NekoBox → + → Subscribe → URL မှာ ကူးထည့်ပါ" + RS)
+            print()
+            input("ပြန်ရန် Enter နှိပ်ပါ")
+        
         else:
-            print(f"\n{C.R}❌ ရွေးချယ်မှုမှားနေပါတယ်၊ ထပ်မံကြိုးစားကြည့်ပါ{C.RS}\n")
+            print()
+            print(R + "❌ ရွေးချယ်မှုမှားနေပါတယ်" + RS)
+            print()
 
 if __name__ == "__main__":
     main()
-    
+        
