@@ -3,7 +3,7 @@
 import urllib.request, base64, os, socket, time, json, sys
 from datetime import datetime
 
-VERSION = "🏆 ETERNAL SUPREME v8.1"
+VERSION = "🏆 ETERNAL SUPREME v8.2"
 FAV_FILE = os.path.expanduser("~/.vpn_eternal.json")
 
 class C:
@@ -23,7 +23,7 @@ def title():
     clear()
     print(f"""{C.G}
 ╔═════════════════════════════════════╗
-║     {C.B}🏆 ETERNAL SUPREME v8.1 🏆{C.RESET}{C.G}     ║
+║     {C.B}🏆 ETERNAL SUPREME v8.2 🏆{C.RESET}{C.G}     ║
 ║   Beyond stars, beyond time ✨       ║
 ╚═════════════════════════════════════╝{C.RESET}""")
     print(f"  🕐 {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
@@ -106,6 +106,12 @@ def flag(name):
     if "japan" in n or "jp " in n: return "🇯🇵 JP"
     if "korea" in n or "kr " in n: return "🇰🇷 KR"
     if "vietnam" in n or "vn " in n: return "🇻🇳 VN"
+    if "uk" in n or "gb" in n or "united kingdom" in n: return "🇬🇧 GB"
+    if "finland" in n or "fi " in n: return "🇫🇮 FI"
+    if "russia" in n or "ru " in n: return "🇷🇺 RU"
+    if "united states" in n or "us " in n: return "🇺🇸 US"
+    if "germany" in n or "de " in n: return "🇩🇪 DE"
+    if "denmark" in n or "dk " in n: return "🇩🇰 DK"
     return "🌐 --"
 
 def rank(ms):
@@ -161,28 +167,36 @@ def show_list(data, title_text):
         print(f"  {C.R}မတွေ့ပါ{C.RESET}\n")
         return
     print(f"  {C.G}{title_text}  ({len(data)} ခု){C.RESET}")
-    print(f"  ┌──┬─────────┬──────────────────┬─────────────────────────────┐")
-    print(f"  │# │ နိုင်ငံ  │ အဆင့်            │ အမည်                        │")
-    print(f"  ├──┼─────────┼──────────────────┼─────────────────────────────┤")
+    print(f"  ┌──┬─────────┬──────────────────┬───────────────────────────────────────────────┐")
+    print(f"  │# │ နိုင်ငံ  │ အဆင့်            │ အမည်                                        │")
+    print(f"  ├──┼─────────┼──────────────────┼───────────────────────────────────────────────┤")
     for i,r in enumerate(data,1):
-        print(f"  │{i:<2}│ {flag(r['name']):<7} │ {rank(r['ms']):<16} │ {r['name'][:28]:<28} │")
-    print(f"  └──┴─────────┴──────────────────┴─────────────────────────────┘\n")
+        print(f"  │{i:<2}│ {flag(r['name']):<7} │ {rank(r['ms']):<16} │ {r['name'][:45]:<45} │")
+    print(f"  └──┴─────────┴──────────────────┴───────────────────────────────────────────────┘\n")
 
 def copy_top(data, n=3):
     if not data: return
     top = data[:n]
     keys_text = "\n".join([r["key"] for r in top])
-    print(f"  {C.G}💎 အကောင်းဆုံး {len(top)} ခု ကီးများ{C.RESET}")
-    print("  "+"═"*65)
-    for r in top:
-        print(f"  နိုင်ငံ: {flag(r['name'])}  အဆင့်: {rank(r['ms'])}")
-        print(f"  ကီး: {r['key'][:60]}...")
+    
+    print(f"\n{C.G}{'═'*70}{C.RESET}")
+    print(f"{C.G}💎 အကောင်းဆုံး {len(top)} ခု — ကီးအပြည့်အစုံ{C.RESET}")
+    print(f"{C.G}{'═'*70}{C.RESET}\n")
+    
+    for idx, r in enumerate(top, 1):
+        print(f"{C.S}┌── ကီး {idx}/{len(top)} ──────────────────────────────────────{C.RESET}")
+        print(f"  {C.W}နိုင်ငံ:{C.RESET} {flag(r['name'])}   {C.W}အဆင့်:{C.RESET} {rank(r['ms'])}")
+        print(f"  {C.W}အမည်:{C.RESET} {r['name']}")
+        print(f"  {C.W}ကီး:{C.RESET}")
+        print(f"  {r['key']}")
         print()
+    
     ok = copy_t(keys_text)
+    print(f"{C.G}{'═'*70}{C.RESET}")
     if ok:
-        print(f"  {C.E}✓ ကလစ်ဘုတ်သို့ ကူးယူပြီးပါပြီ!{C.RESET}")
+        print(f"  {C.E}✅ ကလစ်ဘုတ်သို့ အကုန်ကူးယူပြီးပါပြီ!{C.RESET}")
     else:
-        print(f"  {C.A}⚠️ အထက်က ကီးကို ကိုယ်တိုင်ကူးပါ{C.RESET}")
+        print(f"  {C.A}⚠️ အထက်က ကီးများကို ကိုယ်တိုင်အပြည့်အဝကူးယူပါ{C.RESET}")
     print()
     return top
 
@@ -200,16 +214,19 @@ def fav_menu():
             for i,f in enumerate(favs,1):
                 print(f"  │{i:<2}│ {flag(f['name']):<7} │ {f['name'][:30]:<30} │ {f['saved_at']:<12} │")
             print(f"  └──┴─────────┴──────────────────────────────┴──────────────┘")
-            print(f"  နံပါတ်ထည့်ပါ = ကီးကူးယူမည်")
+            print(f"  နံပါတ်ထည့်ပါ = ကီးအပြည့်အစုံကူးယူမည်")
         print(f"  0 = ပင်မမီနူး")
         sel = input(f"\n  {C.S}ရွေးချယ်ပါ → {C.RESET}").strip()
         if sel=="0": break
         if sel.isdigit() and favs:
             idx = int(sel)-1
             if 0<=idx<len(favs):
-                copy_t(favs[idx]["key"])
-                print(f"  {C.E}✓ ကူးယူပြီးပါပြီ!{C.RESET}\n")
-                time.sleep(1)
+                key_data = favs[idx]["key"]
+                copy_t(key_data)
+                print(f"\n  {C.G}ကီးအပြည့်အစုံ:{C.RESET}")
+                print(f"  {key_data}")
+                print(f"\n  {C.E}✅ ကူးယူပြီးပါပြီ!{C.RESET}\n")
+                time.sleep(2)
 
 def main():
     all_keys = load_keys()
