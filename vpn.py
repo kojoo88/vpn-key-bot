@@ -19,13 +19,14 @@ RST = "\033[0m"
 
 def clear(): os.system("clear")
 
-# SOURCES
+# ✅ အလုပ်လုပ်နေတဲ့ Sources သာထားရှိသည်
 SOURCES = [
     ("V2Nodes", "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
-    ("Shadowmere", "https://shadowmere.xyz/api/b64sub/", "b64"),
-    ("Shadowmere API", "https://shadowmere.xyz/api/sub/", "txt"),
-    ("V2Ray-Configs VLESS", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Splitted-By-Protocol/vless.txt", "txt"),
-    ("V2Ray-Configs SS", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Splitted-By-Protocol/ss.txt", "txt"),
+    ("Shadowmere B64", "https://shadowmere.xyz/api/b64sub/", "b64"),
+    ("Shadowmere Plain", "https://shadowmere.xyz/api/sub/", "txt"),
+    ("V2Ray-Vault", "https://raw.githubusercontent.com/Argh73/V2Ray-Vault/main/data/sub/all_configs.txt", "txt"),
+    ("Epodon VLESS", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Splitted-By-Protocol/vless.txt", "txt"),
+    ("Epodon SS", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/ss.txt", "txt"),
 ]
 
 FAV_FILE = "favorites.txt"
@@ -128,17 +129,17 @@ def load_all():
                 ss.extend([k for k in keys if k["type"]=="SS"])
                 success_count += 1
             else:
-                print(f"{YEL}No keys{RST}")
+                print(f"{YEL}No keys found{RST}")
         else:
-            print(f"{RED}Failed{RST}")
+            print(f"{RED}Failed to connect{RST}")
     print(PUR + "="*50 + RST)
-    print(f"{GRN}Loaded {success_count}/{len(SOURCES)} sources{RST}")
+    print(f"{GRN}Loaded {success_count}/{len(SOURCES)} sources successfully{RST}")
     load_favorites()
     return vless, ss
 
 def scan_and_show(keys, title, count=10):
     if not keys:
-        print(f"\n{YEL}Load sources first!{RST}")
+        print(f"\n{YEL}Load sources first using [1]!{RST}")
         time.sleep(1.5)
         return
     results = []
@@ -164,7 +165,7 @@ def scan_and_show(keys, title, count=10):
 
 def best_for_me(all_keys):
     if not all_keys:
-        print(f"\n{YEL}Load sources first!{RST}")
+        print(f"\n{YEL}Load sources first using [1]!{RST}")
         time.sleep(1.5)
         return
     print(f"\n{PUR}Finding best server for your {get_net()}...{RST}\n")
@@ -187,18 +188,18 @@ def best_for_me(all_keys):
         print(f"  Ping   : {GRN}{best['ms']} ms{RST}")
         print(f"  Level  : {best['lvl']}")
         print()
-        print(f"  KEY:")
+        print(f"  FULL KEY:")
         print(f"  {best['url']}")
         print(PUR + "="*50 + RST)
-        print(f"  [S] Save to Favorites   [C] Copy   [X] Back")
+        print(f"  [S] Save to Favorites   [X] Back")
         ch = input("\nChoose -> ").upper()
         if ch == "S":
             if best["url"] not in favorites:
                 favorites.append(best["url"])
                 save_favorites()
-                print(f"{PINK}Saved to favorites!{RST}")
+                print(f"{PINK}Saved to favorites! ❤️{RST}")
             else:
-                print(f"{YEL}Already saved{RST}")
+                print(f"{YEL}Already in favorites{RST}")
             time.sleep(1.5)
     else:
         print(f"{RED}No working server found{RST}")
@@ -206,16 +207,16 @@ def best_for_me(all_keys):
 
 def show_favorites():
     clear()
-    print(f"{PINK}❤️  Favorites ({len(favorites)}){RST}\n")
+    print(f"{PINK}❤️  My Favorites ({len(favorites)}){RST}\n")
     if not favorites:
-        print(f"{DIM}Empty. Scan and save servers!{RST}")
+        print(f"{DIM}Empty. Scan servers and save with [S]{RST}")
     else:
         for i, url in enumerate(favorites, 1):
             name = url.split("#")[-1][:40] if "#" in url else f"Server {i}"
             print(f"  [{i}] {name}")
             print(f"      {url[:60]}...")
             print()
-    input(f"{CYN}Press Enter...{RST}")
+    input(f"{CYN}Press Enter to go back...{RST}")
 
 def main():
     vless, ss = [], []
@@ -245,7 +246,7 @@ def main():
             break
         elif ch == "1":
             vless, ss = load_all()
-            input(f"\n{CYN}Press Enter...{RST}")
+            input(f"\n{CYN}Press Enter to return to menu...{RST}")
         elif ch == "2":
             scan_and_show(vless, "VLESS Servers - Fastest First", 10)
         elif ch == "3":
@@ -255,7 +256,7 @@ def main():
         elif ch == "5":
             show_favorites()
         else:
-            print(f"\n{RED}Invalid choice!{RST}")
+            print(f"\n{RED}Invalid choice! Try again{RST}")
             time.sleep(1)
 
 if __name__ == "__main__":
@@ -268,4 +269,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n{RED}Error: {e}{RST}")
         input("Press Enter to exit...")
-    
