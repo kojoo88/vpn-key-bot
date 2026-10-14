@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # ╔══════════════════════════════════════════════════════════╗
-# ║     🌍 ULTIMATE VPN KEY FINDER — Country Edition          ║
-# ║   Auto-Scan • Fastest Top10 • Country Filter • Smart Save ║
+# ║     🌍 ULTIMATE VPN KEY FINDER — Smart Filter Edition     ║
+# ║   Auto-Scan • Smart Filter • Quality Score • Auto-Save   ║
 # ╚══════════════════════════════════════════════════════════╝
-import urllib.request, base64, os, socket, time, datetime, re
+import urllib.request, base64, os, socket, time, datetime
 
 # ─── Theme Colors ───
 BLU = "\033[94m"
@@ -53,12 +53,12 @@ def ping_test(host, port):
         s.connect((host, int(port)))
         ms = int((time.time() - start) * 1000)
         s.close()
-        if ms < 100:   return f"{GRN}🌟 {ms}ms  EXCELLENT{RST}", ms
-        elif ms < 150: return f"{GRN}✅ {ms}ms    GREAT{RST}", ms
-        elif ms < 250: return f"{YEL}⚡ {ms}ms     GOOD{RST}", ms
-        elif ms < 400: return f"{YEL}📍 {ms}ms     FAIR{RST}", ms
-        else:           return f"{RED}⚠️ {ms}ms     SLOW{RST}", ms
-    except: return None, 9999
+        if ms < 100:   return f"{GRN}🌟 {ms}ms  EXCELLENT{RST}", ms, 5
+        elif ms < 150: return f"{GRN}✅ {ms}ms    GREAT{RST}", ms, 4
+        elif ms < 250: return f"{YEL}⚡ {ms}ms     GOOD{RST}", ms, 3
+        elif ms < 400: return f"{YEL}📍 {ms}ms     FAIR{RST}", ms, 2
+        else:           return f"{RED}⚠️ {ms}ms     SLOW{RST}", ms, 1
+    except: return None, 9999, 0
 
 def fetch_url(url):
     try:
@@ -98,23 +98,27 @@ def parse_configs(text, fmt):
             name = extract_name(line)
             country = detect_country(name)
             if line.startswith("vless://"):
-                keys.append({"proto": "VLESS", "name": name, "country": country, "key": line, "ping": "--", "ms": 9999})
+                keys.append({"proto": "VLESS", "name": name, "country": country, 
+                            "key": line, "ping": "--", "ms": 9999, "score": 0})
             elif line.startswith("ss://"):
-                keys.append({"proto": "SS", "name": name, "country": country, "key": line, "ping": "--", "ms": 9999})
+                keys.append({"proto": "SS", "name": name, "country": country, 
+                            "key": line, "ping": "--", "ms": 9999, "score": 0})
     except: pass
     return keys
 
-def save_top10(proto, country_label, top10):
+def save_results(proto, country_label, results, mode_label):
     try:
         fname = SAVE_VLESS if proto == "VLESS" else SAVE_SS
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(fname, "w", encoding="utf-8") as f:
             f.write(f"{'═'*60}\n")
-            f.write(f"  🏆 TOP 10 FASTEST {proto} SERVERS — {country_label}\n")
+            f.write(f"  🏆 {mode_label} — {proto} SERVERS — {country_label}\n")
             f.write(f"  📅 Updated: {now}\n")
             f.write(f"{'═'*60}\n\n")
-            for idx, item in enumerate(top10, 1):
-                f.write(f"  [{idx}] {item['ping']} | {item['country']} | {item['name']}\n")
+            for idx, item in enumerate(results, 1):
+                stars = "⭐" * item["score"]
+                f.write(f"  [{idx}] {item['ping']}  {stars}\n")
+                f.write(f"      {item['country']} | {item['name']}\n")
                 f.write(f"      {item['key']}\n\n")
         return True, fname, now
     except: return False, "", ""
@@ -163,52 +167,48 @@ def country_filter_menu(proto):
     header(f"🌍 SELECT COUNTRY — {proto}")
     for k, v in COUNTRIES.items():
         print(f"   [{k}] {v[0]}")
-    print(f"\n   ═══ Choose Action ═══")
-    print(f"   [B] 🏆 BEST — Fastest Only (Top 10)")
-    print(f"   [T] 🧪 TEST  — Show All + Ping")
     print(f"\n   [0] Cancel")
     footer()
-    c = input(f"\n  {MAG}Choose → {RST}").strip().upper()
+    c = input(f"\n  {MAG}Choose Country → {RST}").strip()
     
-    if c == "0": return None, None, None
-    if c in ["B", "T"]:
-        country_label = "🌐 All Countries"
-        keywords = []
-        return country_label, keywords, c
+    if c == "0": return None, None
     if c in COUNTRIES:
         country_label = COUNTRIES[c][0]
         keywords = COUNTRIES[c][1]
-        print(f"\n   ═══ Action for {country_label} ═══")
-        print(f"   [B] 🏆 BEST — Fastest Only (Top 10)")
-        print(f"   [T] 🧪 TEST  — Show All + Ping")
-        print(f"\n   [0] Cancel")
-        footer()
-        act = input(f"\n  {MAG}Choose Action → {RST}").strip().upper()
-        if act in ["B", "T"]:
-            return country_label, keywords, act
-    return None, None, None
+        return country_label, keywords
+    return None, None
 
-def scan_and_pick_best(proto, all_keys, country_label=None, keywords=None, mode="B"):
-    header(f"🔍 SCANNING {proto}...")
+def filter_menu():
+    header("📊 SELECT FILTER MODE")
+    print(f"   [1] ⚡ FASTEST Top 10       — အမြန်ဆုံး 10 ခု")
+    print(f"   [2] 🟢 STABLE & GOOD        — တည်ငြိမ်+ကောင်းမွန် (250ms အောက်)")
+    print(f"   [3] 📊 SHOW ALL + QUALITY   — အကုန်ပြပြီး အဆင့်သတ်မှတ်ပေး")
+    print(f"\n   [0] Cancel")
+    footer()
+    c = input(f"\n  {MAG}Choose Filter → {RST}").strip()
+    
+    if c == "1": return "fastest", "⚡ FASTEST Top 10"
+    elif c == "2": return "stable", "🟢 STABLE & GOOD"
+    elif c == "3": return "all", "📊 SHOW ALL + QUALITY"
+    return None, None
+
+def scan_and_filter(proto, all_keys, country_label, keywords, filter_mode, mode_label):
+    header(f"🔍 SCANNING {proto} — {country_label}")
     
     servers = [k for k in all_keys if k["proto"] == proto]
-    
     if keywords:
         servers = [s for s in servers if any(kw.upper() in s["name"].upper() for kw in keywords)]
     
     total = len(servers)
-    
     if total == 0:
         print(f"\n  {YEL}⚠️ No servers found for this country{RST}\n")
         footer()
         input("  Back → Enter")
-        return None
+        return
     
     print(f"  ⚠️  {YEL}IMPORTANT: First time using VPN? Please connect to the fastest server first!{RST}\n")
     print(f"  📦 Total: {BLU}{total}{RST} servers")
-    if country_label:
-        print(f"  🌍 Filter: {MAG}{country_label}{RST}")
-    print(f"  🔄 Testing connection speed...\n")
+    print(f"  🔄 Testing connection & quality...\n")
     
     alive = []
     start_time = time.time()
@@ -218,54 +218,56 @@ def scan_and_pick_best(proto, all_keys, country_label=None, keywords=None, mode=
         try:
             from urllib.parse import urlparse
             p = urlparse(svr["key"])
-            ping_str, ms = ping_test(p.hostname, p.port)
+            ping_str, ms, score = ping_test(p.hostname, p.port)
             if ping_str:
                 svr["ping"] = ping_str
                 svr["ms"] = ms
+                svr["score"] = score
                 alive.append(svr.copy())
         except: pass
     
     elapsed = int(time.time() - start_time)
     alive_sorted = sorted(alive, key=lambda x: x["ms"])
     
-    if mode == "B":
+    # Apply filters
+    if filter_mode == "fastest":
         results = alive_sorted[:10]
-        title = f"🏆 TOP 10 FASTEST {proto}" + (f" — {country_label}" if country_label else "")
-    else:
+    elif filter_mode == "stable":
+        results = [s for s in alive_sorted if s["ms"] <= 250]
+    else:  # all
         results = alive_sorted
-        title = f"🧪 ALL {proto} SERVERS" + (f" — {country_label}" if country_label else "")
     
-    header(title)
+    header(f"🏆 {mode_label}")
     print(f"  ⚠️  {YEL}IMPORTANT: First time using VPN? Please connect to the fastest server first!{RST}\n")
-    print(f"  📊 Scanned: {BLU}{total}{RST} | ✅ Online: {GRN}{len(alive)}{RST} | ⏱️ Done in {elapsed}s\n")
+    print(f"  📊 Scanned: {BLU}{total}{RST} | ✅ Online: {GRN}{len(alive)}{RST} | ✅ Passed: {MAG}{len(results)}{RST} | ⏱️ {elapsed}s\n")
     
     if not results:
-        print(f"  {RED}😢 No working servers found{RST}")
-        print(f"  {YEL}  Check your internet or try again later{RST}\n")
+        print(f"  {RED}😢 No matching servers found{RST}")
+        if filter_mode == "stable":
+            print(f"  {YEL}  Try 'Show All' to see all available servers{RST}\n")
         footer()
         input("  Back → Enter")
-        return None
+        return
     
     for idx, svr in enumerate(results, 1):
-        print(f"  {BLU}{BLD}[{idx:02d}]{RST}  {svr['ping']}")
+        stars = "⭐" * svr["score"]
+        print(f"  {BLU}{BLD}[{idx:02d}]{RST}  {svr['ping']}  {stars}")
         print(f"       {svr['country']}  {MAG}{svr['name']}{RST}")
         print(f"       {svr['key']}\n")
     
-    if mode == "B":
-        ok, fname, stamp = save_top10(proto, country_label or "All Countries", results)
-        if ok:
-            print(f"  💾 {GRN}✓ Saved to: {fname}{RST}")
-            print(f"  📅 Time: {stamp}\n")
+    ok, fname, stamp = save_results(proto, country_label, results, mode_label)
+    if ok:
+        print(f"  💾 {GRN}✓ Saved to: {fname}{RST}")
+        print(f"  📅 Time: {stamp}\n")
     footer()
-    return results
 
 def view_saved(proto):
     content, fname, mtime = load_saved_data(proto)
-    header(f"📂 SAVED {proto} — Top 10 Fastest")
+    header(f"📂 SAVED {proto} — Results")
     print(f"  ⚠️  {YEL}IMPORTANT: First time using VPN? Please connect to the fastest server first!{RST}\n")
     if not content:
         print(f"  {YEL}⚠️ No saved data yet!{RST}")
-        print(f"  First run: Scan & Best\n")
+        print(f"  First run: Scan & Filter\n")
     else:
         print(f"  📄 File: {fname}\n")
         print(content)
@@ -310,7 +312,7 @@ def main():
         header("MAIN MENU")
         print(f"  🟦 {BLU}VLESS SERVERS{RST}        🟧 {YEL}SS SERVERS{RST}")
         print(f"  {line('-',16)}        {line('-',16)}")
-        print(f"   [1] 🌍 VLESS by Country  [4] 🌍 SS by Country")
+        print(f"   [1] 🌍 Scan VLESS        [4] 🌍 Scan SS")
         print(f"   [2] 📂 View Saved VLESS   [5] 📂 View Saved SS")
         print(f"   [3] 🔄 Refresh List      [0] ❌ Exit")
         print(f"  {line('-',40)}")
@@ -325,9 +327,11 @@ def main():
             footer()
             break
         elif choice == "1":
-            country_label, keywords, mode = country_filter_menu("VLESS")
-            if country_label and mode:
-                scan_and_pick_best("VLESS", vless_data, country_label, keywords, mode)
+            country_label, keywords = country_filter_menu("VLESS")
+            if country_label:
+                filter_mode, mode_label = filter_menu()
+                if filter_mode:
+                    scan_and_filter("VLESS", vless_data, country_label, keywords, filter_mode, mode_label)
             input(f"\n  {MAG}Back → Menu{RST}")
         elif choice == "2":
             view_saved("VLESS")
@@ -335,9 +339,11 @@ def main():
         elif choice == "3":
             vless_data, ss_data = load_all_sources()
         elif choice == "4":
-            country_label, keywords, mode = country_filter_menu("SS")
-            if country_label and mode:
-                scan_and_pick_best("SS", ss_data, country_label, keywords, mode)
+            country_label, keywords = country_filter_menu("SS")
+            if country_label:
+                filter_mode, mode_label = filter_menu()
+                if filter_mode:
+                    scan_and_filter("SS", ss_data, country_label, keywords, filter_mode, mode_label)
             input(f"\n  {MAG}Back → Menu{RST}")
         elif choice == "5":
             view_saved("SS")
