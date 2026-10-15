@@ -7,6 +7,7 @@ import time
 import os
 import subprocess
 import sys
+import re
 
 # ================== COLORS ==================
 BLK = "\033[38;5;234m"
@@ -39,7 +40,6 @@ def open_admin_link():
     print(f"\n  🔗 LINK: {CYN}{ADMIN_LINK}{RST}")
     print(f"\n  🌐 Opening Facebook...")
     
-    # Try to open directly
     opened = False
     try:
         subprocess.run(['termux-open-url', ADMIN_LINK], capture_output=True, timeout=5)
@@ -62,6 +62,74 @@ def open_admin_link():
         print(f"  💡 Please copy the link above and open it manually")
     
     input(f"\n  Press Enter to go back...")
+
+# ================== EXTRACT IP & PORT FROM URL ==================
+def extract_ip_port(url):
+    """Extract IP address and port from vless:// or ss:// URL"""
+    try:
+        # Remove protocol prefix
+        if url.startswith("vless://"):
+            url_body = url[8:]
+        elif url.startswith("ss://"):
+            url_body = url[5:]
+        else:
+            return None, None
+        
+        # Remove name part after #
+        if "#" in url_body:
+            url_body = url_body.split("#")[0]
+        
+        # Handle @ format: uuid@host:port or base64@host:port
+        if "@" in url_body:
+            host_port = url_body.split("@")[-1]
+        else:
+            host_port = url_body
+        
+        # Parse host:port
+        if ":" in host_port:
+            # IPv4: host:port
+            parts = host_port.rsplit(":", 1)
+            host = parts[0]
+            # Remove any path/query from host
+            if "/" in host:
+                host = host.split("/")[0]
+            port = int(parts[1].split("/")[0])
+            return host, port
+        return None, None
+    except:
+        return None, None
+
+# ================== REAL PING TEST ==================
+def ping_server_ip(host, port=443, timeout=3):
+    """Test real connection time to the actual server IP"""
+    if not host:
+        return False, 999, "No IP", 0
+    
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        start = time.perf_counter()
+        s.connect((host, port))
+        ms = int((time.perf_counter() - start) * 1000)
+        s.close()
+        
+        # Speed rating
+        if ms < 50:
+            return True, ms, "Fast", 5
+        elif ms < 100:
+            return True, ms, "Good", 4
+        elif ms < 200:
+            return True, ms, "Normal", 3
+        elif ms < 400:
+            return True, ms, "Slow", 2
+        else:
+            return True, ms, "VerySlow", 1
+    except socket.timeout:
+        return False, 999, "Timeout", 0
+    except ConnectionRefusedError:
+        return False, 999, "Refused", 0
+    except Exception:
+        return False, 999, "Offline", 0
 
 # ================== SOURCES ==================
 SOURCES = [
@@ -96,18 +164,18 @@ def get_net():
     except:
         return "Unknown"
 
-def get_country_code(name):
-    codes = ["SG", "US", "JP", "KR", "HK", "TW", "UK", "GB", "DE", "NL", "CA", "AU", "IN", "TH", "MY", "CN", "RU", "FR", "IT"]
-    name_upper = name.upper()
+def get_country_code(text):
+    codes = ["SG", "US", "JP", "KR", "HK", "TW", "UK", "GB", "DE", "NL", "CA", "AU", "IN", "TH", "MY", "CN", "RU", "FR", "IT", "PL", "CZ", "SE", "ES", "BR"]
+    text_upper = text.upper()
     for c in codes:
-        if c in name_upper:
+        if c in text_upper:
             return c
     return "??"
 
 def fetch(url):
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=25) as r:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=25)
+        with urllib.request.urlopen(req) as r:
             return r.read().decode("utf-8", errors="ignore")
     except:
         return None
@@ -126,34 +194,18 @@ def parse(content, fmt):
                 continue
             if line.startswith(("vless://", "ss://")):
                 protocol = "VLESS" if line.startswith("vless://") else "SS"
-                code = get_country_code(line)
-                keys.append({"country": code, "protocol": protocol, "url": line})
+                country = get_country_code(line)
+                ip, port = extract_ip_port(line)
+                keys.append({
+                    "country": country,
+                    "protocol": protocol,
+                    "url": line,
+                    "ip": ip,
+                    "port": port
+                })
     except:
         pass
     return keys
-
-def ping_test(url):
-    try:
-        host = "8.8.8.8"
-        port = 53
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        start = time.time()
-        s.connect((host, port))
-        ms = int((time.time() - start) * 1000)
-        s.close()
-        if ms < 100:
-            return True, ms, "Fast", 5
-        elif ms < 200:
-            return True, ms, "Normal", 4
-        elif ms < 300:
-            return True, ms, "Medium", 3
-        elif ms < 500:
-            return True, ms, "Slow", 2
-        else:
-            return True, ms, "VerySlow", 1
-    except:
-        return False, 999, "Offline", 0
 
 def load_all():
     vless = []
@@ -163,6 +215,7 @@ def load_all():
     print(PUR + "|         LOADING SOURCES...              |" + RST)
     print(PUR + "-"*60 + RST)
     success_count = 0
+    total_keys = 0
     for idx, (name, url, fmt) in enumerate(SOURCES, 1):
         print(f"  [{idx}/{len(SOURCES)}] {name:<25}", end=" ")
         content = fetch(url)
@@ -173,13 +226,14 @@ def load_all():
                     vless.append(k)
                 else:
                     ss.append(k)
+            total_keys += len(keys)
             print(f"{GRN}OK {len(keys)} keys{RST}")
             success_count += 1
         else:
             print(f"{RED}FAILED{RST}")
     print(PUR + "="*60 + RST)
     print(f"{GRN}DONE: {success_count}/{len(SOURCES)} sources{RST}")
-    print(f"   VLESS: {len(vless)}  |  SS: {len(ss)}{WHT}")
+    print(f"   VLESS: {len(vless)}  |  SS: {len(ss)}  |  TOTAL: {total_keys}{WHT}")
     load_favorites()
     input(f"\n  Press Enter to continue...")
     return vless, ss
@@ -197,8 +251,16 @@ def scan_and_show(keys, title, count=10):
     total = len(keys)
     for i, k in enumerate(keys, 1):
         pct = int(i/total*100)
-        print(f"  Checking: {pct}%", end="\r")
-        ok, ms, lvl, sc = ping_test(k["url"])
+        print(f"  Testing Real Ping: {pct}%", end="\r")
+        
+        # Test ping to ACTUAL server IP:port
+        if k.get("ip") and k.get("port"):
+            ok, ms, lvl, sc = ping_server_ip(k["ip"], k["port"])
+        elif k.get("ip"):
+            ok, ms, lvl, sc = ping_server_ip(k["ip"])
+        else:
+            ok, ms, lvl, sc = False, 999, "No IP", 0
+        
         if ok and sc > 0:
             k["ms"] = ms
             k["lvl"] = lvl
@@ -213,7 +275,9 @@ def scan_and_show(keys, title, count=10):
     
     for idx, s in enumerate(top, 1):
         stars = "*"*s["sc"] + "-"*(5-s["sc"])
-        print(f"\n{PUR}[{idx}] {s['country']}  |  Ping: {CYN}{s['ms']}ms{RST}  |  {stars}  {GRN}{s['lvl']}{RST}")
+        print(f"\n{PUR}[{idx}] {s['country']}{RST}  |  IP: {CYN}{s.get('ip', 'N/A')}{RST}")
+        print(f"      Ping: {CYN}{s['ms']}ms{RST}  |  {stars}  {GRN}{s['lvl']}{RST}")
+        print(f"      Port: {s.get('port', 'N/A')}")
         print(f"{CYN}🔑 FULL KEY:{RST}")
         print(f"{WHT}{s['url']}{RST}")
         print(f"{PUR}{'-'*70}{RST}")
@@ -234,8 +298,15 @@ def best_for_me(all_keys):
     total = len(all_keys)
     for i, k in enumerate(all_keys, 1):
         pct = int(i/total*100)
-        print(f"  Checking: {pct}%", end="\r")
-        ok, ms, lvl, sc = ping_test(k["url"])
+        print(f"  Testing Real Ping: {pct}%", end="\r")
+        
+        if k.get("ip") and k.get("port"):
+            ok, ms, lvl, sc = ping_server_ip(k["ip"], k["port"])
+        elif k.get("ip"):
+            ok, ms, lvl, sc = ping_server_ip(k["ip"])
+        else:
+            ok, ms, lvl, sc = False, 999, "No IP", 0
+        
         if ok and sc > 0:
             k["ms"] = ms
             k["lvl"] = lvl
@@ -252,9 +323,11 @@ def best_for_me(all_keys):
         print(PUR + "|       🏆 BEST SERVER FOUND!              |" + RST)
         print(PUR + "-"*70 + RST)
         print(f"\n  Country : {best['country']}")
+        print(f"  IP      : {CYN}{best.get('ip', 'N/A')}{RST}")
+        print(f"  Port    : {best.get('port', 'N/A')}")
         print(f"  Protocol: {best['protocol']}")
-        print(f"  Ping    : {GRN}{best['ms']}ms{RST}")
-        print(f"  Speed   : {stars}  {GRN}{best['lvl']}{RST}")
+        print(f"  Ping    : {GRN}{best['ms']}ms{RST}  {stars}")
+        print(f"  Speed   : {GRN}{best['lvl']}{RST}")
         print(f"\n{CYN}🔑 YOUR FULL VPN KEY:{RST}")
         print(f"{WHT}{best['url']}{RST}")
         print(PUR + "="*70 + RST)
@@ -294,15 +367,15 @@ def main():
         net_type = get_net()
         total_keys = len(vless) + len(ss)
         print(PUR + "="*70 + RST)
-        print(PUR + "|      🚀 VPN KEY FINDER - PREMIUM         |" + RST)
+        print(PUR + "|   🚀 VPN KEY FINDER - REAL PING EDITION  |" + RST)
         print(PUR + "-"*70 + RST)
         print(f"  📡 Network : {CYN}{net_type}{RST}")
         print(f"  🔑 Keys Loaded: {GRN}{total_keys}{RST}")
         print(PUR + "-"*70 + RST)
         print(f"  [1] Load All Sources")
-        print(f"  [2] Show VLESS Servers (Full Key)")
-        print(f"  [3] Show SS Servers (Full Key)")
-        print(f"  [4] Find Best Server (Full Key)")
+        print(f"  [2] Show VLESS Servers (Real Ping)")
+        print(f"  [3] Show SS Servers (Real Ping)")
+        print(f"  [4] Find Best Server (Real Ping)")
         print(f"  [5] My Favorites")
         print(f"  [6] Open Facebook Page")
         print(PUR + "-"*70 + RST)
@@ -340,4 +413,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n  {RED}ERROR: {e}{RST}")
         input(f"  Press Enter to exit...")
-    
+                           
