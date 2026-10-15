@@ -8,7 +8,6 @@ import os
 import subprocess
 import sys
 
-# ================== COLORS ==================
 BLK = "\033[38;5;234m"
 BLU = "\033[38;5;117m"
 CYN = "\033[38;5;80m"
@@ -24,9 +23,7 @@ DIM = "\033[2m"
 BD = "\033[1m"
 RST = "\033[0m"
 
-# ================== ADMIN LINK ==================
 ADMIN_LINK = "https://www.facebook.com/share/19TVQNTUGZ/"
-# =================================================
 
 def clear():
     os.system("clear")
@@ -34,12 +31,11 @@ def clear():
 def open_admin_link():
     clear()
     print(PUR + "="*60 + RST)
-    print(PUR + "|        📘 ADMIN FACEBOOK               |" + RST)
+    print(PUR + "|        ADMIN FACEBOOK                   |" + RST)
     print(PUR + "="*60 + RST)
-    print(f"\n  🔗 LINK: {CYN}{ADMIN_LINK}{RST}")
-    print(f"\n  🌐 Opening Facebook...")
+    print("\n  LINK: " + CYN + ADMIN_LINK + RST)
+    print("\n  Opening Facebook...")
     
-    # Try to open directly
     opened = False
     try:
         subprocess.run(['termux-open-url', ADMIN_LINK], capture_output=True, timeout=5)
@@ -49,21 +45,18 @@ def open_admin_link():
     
     if not opened:
         try:
-            subprocess.run(['am', 'start', '-a', 'android.intent.action.VIEW', '-d', ADMIN_LINK], 
-                          capture_output=True, timeout=5)
+            subprocess.run(['am', 'start', '-a', 'android.intent.action.VIEW', '-d', ADMIN_LINK], capture_output=True, timeout=5)
             opened = True
         except:
             pass
     
     if opened:
-        print(f"  {GRN}✅ Opening in your browser/Facebook app{RST}")
+        print("  " + GRN + "OK - Opening in browser" + RST)
     else:
-        print(f"  {YEL}⚠️  Could not open automatically{RST}")
-        print(f"  💡 Please copy the link above and open it manually")
+        print("  " + YEL + "Please copy link and open manually" + RST)
     
-    input(f"\n  Press Enter to go back...")
+    input("\n  Press Enter to go back...")
 
-# ================== SOURCES ==================
 SOURCES = [
     ("V2Nodes", "https://www.v2nodes.com/subscriptions/country/all/?key=72BEE427C23A1AF", "b64"),
     ("Shadowmere B64", "https://shadowmere.xyz/api/b64sub/", "b64"),
@@ -164,7 +157,7 @@ def load_all():
     print(PUR + "-"*60 + RST)
     success_count = 0
     for idx, (name, url, fmt) in enumerate(SOURCES, 1):
-        print(f"  [{idx}/{len(SOURCES)}] {name:<25}", end=" ")
+        print("  [" + str(idx) + "/" + str(len(SOURCES)) + "] " + name.ljust(25), end=" ")
         content = fetch(url)
         if content:
             keys = parse(content, fmt)
@@ -173,31 +166,31 @@ def load_all():
                     vless.append(k)
                 else:
                     ss.append(k)
-            print(f"{GRN}OK {len(keys)} keys{RST}")
+            print(GRN + "OK " + str(len(keys)) + " keys" + RST)
             success_count += 1
         else:
-            print(f"{RED}FAILED{RST}")
+            print(RED + "FAILED" + RST)
     print(PUR + "="*60 + RST)
-    print(f"{GRN}DONE: {success_count}/{len(SOURCES)} sources{RST}")
-    print(f"   VLESS: {len(vless)}  |  SS: {len(ss)}{WHT}")
+    print(GRN + "DONE: " + str(success_count) + "/" + str(len(SOURCES)) + " sources" + RST)
+    print("   VLESS: " + str(len(vless)) + "  |  SS: " + str(len(ss)) + WHT)
     load_favorites()
-    input(f"\n  Press Enter to continue...")
+    input("\n  Press Enter to continue...")
     return vless, ss
 
 def scan_and_show(keys, title, count=10):
     if not keys:
-        print(f"\n{YEL}⚠️  Load sources first from Menu [1]{RST}")
+        print("\n" + YEL + "Load sources first from Menu [1]" + RST)
         time.sleep(1.5)
         return
     results = []
     clear()
     print(PUR + "="*70 + RST)
-    print(PUR + f"|  {title}{' '*(66-len(title))}|" + RST)
+    print(PUR + "|  " + title + " "*(66-len(title)) + "|" + RST)
     print(PUR + "-"*70 + RST)
     total = len(keys)
     for i, k in enumerate(keys, 1):
         pct = int(i/total*100)
-        print(f"  Checking: {pct}%", end="\r")
+        print("  Checking: " + str(pct) + "%", end="\r")
         ok, ms, lvl, sc = ping_test(k["url"])
         if ok and sc > 0:
             k["ms"] = ms
@@ -208,33 +201,33 @@ def scan_and_show(keys, title, count=10):
     results.sort(key=lambda x: x["ms"])
     top = results[:count]
     
-    print(f"\n{GRN}✅ FOUND: {len(results)} working servers{RST}")
+    print("\n" + GRN + "FOUND: " + str(len(results)) + " working servers" + RST)
     print(PUR + "="*70 + RST)
     
     for idx, s in enumerate(top, 1):
         stars = "*"*s["sc"] + "-"*(5-s["sc"])
-        print(f"\n{PUR}[{idx}] {s['country']}  |  Ping: {CYN}{s['ms']}ms{RST}  |  {stars}  {GRN}{s['lvl']}{RST}")
-        print(f"{CYN}🔑 FULL KEY:{RST}")
-        print(f"{WHT}{s['url']}{RST}")
-        print(f"{PUR}{'-'*70}{RST}")
+        print("\n" + PUR + "[" + str(idx) + "] " + s["country"] + "  |  Ping: " + CYN + str(s["ms"]) + "ms" + RST + "  |  " + stars + "  " + GRN + s["lvl"] + RST)
+        print(CYN + "FULL KEY:" + RST)
+        print(WHT + s["url"] + RST)
+        print(PUR + "-"*70 + RST)
     
-    input(f"\n  Press Enter to go back to Menu...")
+    input("\n  Press Enter to go back to Menu...")
 
 def best_for_me(all_keys):
     if not all_keys:
-        print(f"\n{YEL}⚠️  Load sources first from Menu [1]{RST}")
+        print("\n" + YEL + "Load sources first from Menu [1]" + RST)
         time.sleep(1.5)
         return
     clear()
     print(PUR + "="*70 + RST)
-    print(PUR + "|     🏆 FINDING BEST SERVER FOR YOU      |" + RST)
+    print(PUR + "|     FINDING BEST SERVER FOR YOU         |" + RST)
     print(PUR + "-"*70 + RST)
     
     results = []
     total = len(all_keys)
     for i, k in enumerate(all_keys, 1):
         pct = int(i/total*100)
-        print(f"  Checking: {pct}%", end="\r")
+        print("  Checking: " + str(pct) + "%", end="\r")
         ok, ms, lvl, sc = ping_test(k["url"])
         if ok and sc > 0:
             k["ms"] = ms
@@ -249,43 +242,43 @@ def best_for_me(all_keys):
         
         clear()
         print(PUR + "="*70 + RST)
-        print(PUR + "|       🏆 BEST SERVER FOUND!              |" + RST)
+        print(PUR + "|       BEST SERVER FOUND!                |" + RST)
         print(PUR + "-"*70 + RST)
-        print(f"\n  Country : {best['country']}")
-        print(f"  Protocol: {best['protocol']}")
-        print(f"  Ping    : {GRN}{best['ms']}ms{RST}")
-        print(f"  Speed   : {stars}  {GRN}{best['lvl']}{RST}")
-        print(f"\n{CYN}🔑 YOUR FULL VPN KEY:{RST}")
-        print(f"{WHT}{best['url']}{RST}")
+        print("\n  Country : " + best["country"])
+        print("  Protocol: " + best["protocol"])
+        print("  Ping    : " + GRN + str(best["ms"]) + "ms" + RST)
+        print("  Speed   : " + stars + "  " + GRN + best["lvl"] + RST)
+        print("\n" + CYN + "YOUR FULL VPN KEY:" + RST)
+        print(WHT + best["url"] + RST)
         print(PUR + "="*70 + RST)
         
-        choice = input(f"\n  [S] Save to Favorites  |  [X] Back to Menu  → ").upper()
+        choice = input("\n  [S] Save to Favorites  |  [X] Back to Menu  -> ").upper()
         if choice == "S":
             if best["url"] not in favorites:
                 favorites.append(best["url"])
                 save_favorites()
-                print(f"\n{GRN}✅ SAVED TO FAVORITES! ❤️{RST}")
+                print("\n" + GRN + "SAVED TO FAVORITES!" + RST)
             else:
-                print(f"\n{YEL}⚠️  Already in Favorites{RST}")
+                print("\n" + YEL + "Already in Favorites" + RST)
         time.sleep(1.5)
     else:
-        print(f"\n{RED}❌ No working server found{RST}")
+        print("\n" + RED + "No working server found" + RST)
         time.sleep(1.5)
 
 def show_favorites():
     clear()
     print(PUR + "="*70 + RST)
-    print(PUR + "|          ❤️  MY FAVORITE KEYS            |" + RST)
+    print(PUR + "|          MY FAVORITE KEYS               |" + RST)
     print(PUR + "-"*70 + RST)
     if not favorites:
-        print(f"\n  No favorites saved yet")
+        print("\n  No favorites saved yet")
     else:
-        print(f"  Total: {len(favorites)} keys\n")
+        print("  Total: " + str(len(favorites)) + " keys\n")
         for idx, url in enumerate(favorites, 1):
-            print(f"{PUR}[{idx}]{RST} {CYN}🔑 FULL KEY:{RST}")
-            print(f"{WHT}{url}{RST}")
-            print(f"{PUR}{'-'*70}{RST}")
-    input(f"\n  Press Enter to go back...")
+            print(PUR + "[" + str(idx) + "]" + RST + " " + CYN + "FULL KEY:" + RST)
+            print(WHT + url + RST)
+            print(PUR + "-"*70 + RST)
+    input("\n  Press Enter to go back...")
 
 def main():
     vless, ss = [], []
@@ -294,25 +287,25 @@ def main():
         net_type = get_net()
         total_keys = len(vless) + len(ss)
         print(PUR + "="*70 + RST)
-        print(PUR + "|      🚀 VPN KEY FINDER - PREMIUM         |" + RST)
+        print(PUR + "|      VPN KEY FINDER - PREMIUM           |" + RST)
         print(PUR + "-"*70 + RST)
-        print(f"  📡 Network : {CYN}{net_type}{RST}")
-        print(f"  🔑 Keys Loaded: {GRN}{total_keys}{RST}")
+        print("  Network : " + CYN + net_type + RST)
+        print("  Keys Loaded: " + GRN + str(total_keys) + RST)
         print(PUR + "-"*70 + RST)
-        print(f"  [1] Load All Sources")
-        print(f"  [2] Show VLESS Servers (Full Key)")
-        print(f"  [3] Show SS Servers (Full Key)")
-        print(f"  [4] Find Best Server (Full Key)")
-        print(f"  [5] My Favorites")
-        print(f"  [6] Open Facebook Page")
+        print("  [1] Load All Sources")
+        print("  [2] Show VLESS Servers")
+        print("  [3] Show SS Servers")
+        print("  [4] Find Best Server")
+        print("  [5] My Favorites")
+        print("  [6] Open Facebook Page")
         print(PUR + "-"*70 + RST)
-        print(f"  [0] Exit")
+        print("  [0] Exit")
         print(PUR + "="*70 + RST)
-        choice = input(f"\n  Enter your choice: ")
+        choice = input("\n  Enter your choice: ")
         
         if choice == "0":
             clear()
-            print(f"\n  {GRN}Goodbye! 👋{RST}\n")
+            print("\n  " + GRN + "Goodbye!" + RST + "\n")
             break
         elif choice == "1":
             vless, ss = load_all()
@@ -327,7 +320,7 @@ def main():
         elif choice == "6":
             open_admin_link()
         else:
-            print(f"\n  {RED}⚠️  Invalid choice! Try again{RST}")
+            print("\n  " + RED + "Invalid choice! Try again" + RST)
             time.sleep(1)
 
 if __name__ == "__main__":
@@ -335,9 +328,9 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         clear()
-        print(f"\n\n  {GRN}Exited. Goodbye!{RST}\n")
+        print("\n\n  " + GRN + "Exited. Goodbye!" + RST + "\n")
         sys.exit(0)
     except Exception as e:
-        print(f"\n  {RED}ERROR: {e}{RST}")
-        input(f"  Press Enter to exit...")
+        print("\n  " + RED + "ERROR: " + str(e) + RST)
+        input("  Press Enter to exit...")
     
