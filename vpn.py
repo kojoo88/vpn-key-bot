@@ -98,8 +98,8 @@ def main():
             clear()
             print(f"{CYN}⏳ လင့်ခ်ဖွင့်နေသည်...{RST}")
             try:
-                req = urllib.request.Request(B64_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
-                with urllib.request.urlopen(req) as r:
+                req = urllib.request.Request(B64_URL, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=20) as r:
                     b64_content = r.read().decode("utf-8", errors="ignore")
             except Exception as e:
                 print(f"{RED}❌ လင့်ခ်မဖွင့်နိုင်ပါ: {e}{RST}")
@@ -189,4 +189,4 @@ if __name__ == "__main__":
         clear()
         print("\n\n  Bye!\n")
         sys.exit(0)
-        
+    
