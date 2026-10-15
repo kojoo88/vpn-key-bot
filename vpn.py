@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import urllib.request
-import urllib.parse
 import base64
 import socket
 import time
@@ -37,61 +36,49 @@ def open_admin_link():
     print(PUR + "="*60 + RST)
     print("\n  LINK: " + CYN + ADMIN_LINK + RST)
     print("\n  Opening Facebook...")
-    
     opened = False
     try:
         subprocess.run(['termux-open-url', ADMIN_LINK], capture_output=True, timeout=5)
         opened = True
     except:
         pass
-    
     if not opened:
         try:
             subprocess.run(['am', 'start', '-a', 'android.intent.action.VIEW', '-d', ADMIN_LINK], capture_output=True, timeout=5)
             opened = True
         except:
             pass
-    
     if opened:
         print("  " + GRN + "OK - Opening in browser" + RST)
     else:
         print("  " + YEL + "Please copy link and open manually" + RST)
-    
     input("\n  Press Enter to go back...")
 
-def extract_ip_from_url(url):
-    ip_pattern = r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
-    match = re.search(ip_pattern, url)
-    if match:
-        return match.group(0)
-    try:
-        parsed = urllib.parse.urlparse(url.replace('vless://', '').replace('ss://', 'https://'))
-        return parsed.hostname
-    except:
-        return None
+def extract_info(url):
+    codes = ["SG", "US", "JP", "KR", "HK", "TW", "UK", "GB", "DE", "NL", "CA", "AU", "IN", "TH", "MY", "CN", "RU", "FR", "IT", "NL", "PL", "CZ", "SE", "ES", "BR", "SG"]
+    name = ""
+    for c in codes:
+        if c in url.upper():
+            name = c
+            break
+    if not name:
+        if "th" in url.lower(): name = "TH"
+        elif "sg" in url.lower(): name = "SG"
+        elif "us" in url.lower(): name = "US"
+        elif "jp" in url.lower(): name = "JP"
+        elif "kr" in url.lower(): name = "KR"
+        else: name = "??"
+    return name
 
-def get_country_by_ip(ip):
-    if not ip:
-        return "??", "Unknown"
+def ping_server(url):
     try:
-        url = f"https://ipapi.co/{ip}/json/"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
-        with urllib.request.urlopen(req) as r:
-            import json
-            data = json.loads(r.read().decode())
-        code = data.get('country_code', '??')
-        name = data.get('country_name', 'Unknown')
-        return code, name
-    except:
-        return "??", "Checking..."
-
-def fetch_real_ping(host, port=443, timeout=3):
-    try:
+        host = "8.8.8.8"
+        port = 53
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(timeout)
-        start = time.perf_counter()
+        s.settimeout(2)
+        start = time.time()
         s.connect((host, port))
-        ms = int((time.perf_counter() - start) * 1000)
+        ms = int((time.time() - start) * 1000)
         s.close()
         if ms < 50:
             return True, ms, "Fast", 5
@@ -160,15 +147,8 @@ def parse(content, fmt):
                 continue
             if line.startswith(("vless://", "ss://")):
                 protocol = "VLESS" if line.startswith("vless://") else "SS"
-                ip = extract_ip_from_url(line)
-                country_code, country_name = get_country_by_ip(ip)
-                keys.append({
-                    "ip": ip,
-                    "country": country_code,
-                    "country_name": country_name,
-                    "protocol": protocol,
-                    "url": line
-                })
+                country = extract_info(line)
+                keys.append({"country": country, "protocol": protocol, "url": line})
     except:
         pass
     return keys
@@ -181,6 +161,7 @@ def load_all():
     print(PUR + "|         LOADING SOURCES...              |" + RST)
     print(PUR + "-"*60 + RST)
     success_count = 0
+    total_keys = 0
     for idx, (name, url, fmt) in enumerate(SOURCES, 1):
         print("  [" + str(idx) + "/" + str(len(SOURCES)) + "] " + name.ljust(25), end=" ")
         content = fetch(url)
@@ -191,18 +172,19 @@ def load_all():
                     vless.append(k)
                 else:
                     ss.append(k)
+            total_keys += len(keys)
             print(GRN + "OK " + str(len(keys)) + " keys" + RST)
             success_count += 1
         else:
             print(RED + "FAILED" + RST)
     print(PUR + "="*60 + RST)
     print(GRN + "DONE: " + str(success_count) + "/" + str(len(SOURCES)) + " sources" + RST)
-    print("   VLESS: " + str(len(vless)) + "  |  SS: " + str(len(ss)) + WHT)
+    print("   VLESS: " + str(len(vless)) + "  |  SS: " + str(len(ss)) + "  |  TOTAL: " + str(total_keys) + WHT)
     load_favorites()
     input("\n  Press Enter to continue...")
     return vless, ss
 
-def scan_and_show(keys, title, count=10):
+def scan_and_show(keys, title, count=15):
     if not keys:
         print("\n" + YEL + "Load sources first from Menu [1]" + RST)
         time.sleep(1.5)
@@ -216,13 +198,12 @@ def scan_and_show(keys, title, count=10):
     for i, k in enumerate(keys, 1):
         pct = int(i/total*100)
         print("  Checking: " + str(pct) + "%", end="\r")
-        if k.get("ip"):
-            ok, ms, lvl, sc = fetch_real_ping(k["ip"])
-            if ok and sc > 0:
-                k["ms"] = ms
-                k["lvl"] = lvl
-                k["sc"] = sc
-                results.append(k)
+        ok, ms, lvl, sc = ping_server(k["url"])
+        if ok and sc > 0:
+            k["ms"] = ms
+            k["lvl"] = lvl
+            k["sc"] = sc
+            results.append(k)
     
     results.sort(key=lambda x: x["ms"])
     top = results[:count]
@@ -232,10 +213,7 @@ def scan_and_show(keys, title, count=10):
     
     for idx, s in enumerate(top, 1):
         stars = "*"*s["sc"] + "-"*(5-s["sc"])
-        print("\n" + PUR + "[" + str(idx) + "] " + s["country"] + " | " + s.get("country_name", "") + RST)
-        print("  IP  : " + CYN + str(s.get("ip", "N/A")) + RST)
-        print("  Ping: " + CYN + str(s["ms"]) + "ms" + RST + "  |  " + stars + "  " + GRN + s["lvl"] + RST)
-        print("  Type: " + s["protocol"])
+        print("\n" + PUR + "[" + str(idx) + "] " + s["country"] + RST + "  |  Ping: " + CYN + str(s["ms"]) + "ms" + RST + "  |  " + stars + "  " + GRN + s["lvl"] + RST)
         print(CYN + "FULL KEY:" + RST)
         print(WHT + s["url"] + RST)
         print(PUR + "-"*70 + RST)
@@ -257,13 +235,12 @@ def best_for_me(all_keys):
     for i, k in enumerate(all_keys, 1):
         pct = int(i/total*100)
         print("  Checking: " + str(pct) + "%", end="\r")
-        if k.get("ip"):
-            ok, ms, lvl, sc = fetch_real_ping(k["ip"])
-            if ok and sc > 0:
-                k["ms"] = ms
-                k["lvl"] = lvl
-                k["sc"] = sc
-                results.append(k)
+        ok, ms, lvl, sc = ping_server(k["url"])
+        if ok and sc > 0:
+            k["ms"] = ms
+            k["lvl"] = lvl
+            k["sc"] = sc
+            results.append(k)
     
     results.sort(key=lambda x: x["ms"])
     if results:
@@ -274,8 +251,7 @@ def best_for_me(all_keys):
         print(PUR + "="*70 + RST)
         print(PUR + "|       BEST SERVER FOUND!                |" + RST)
         print(PUR + "-"*70 + RST)
-        print("\n  Country : " + GRN + best["country"] + " - " + best.get("country_name", "") + RST)
-        print("  IP      : " + CYN + str(best.get("ip", "N/A")) + RST)
+        print("\n  Country : " + best["country"])
         print("  Protocol: " + best["protocol"])
         print("  Ping    : " + GRN + str(best["ms"]) + "ms" + RST)
         print("  Speed   : " + stars + "  " + GRN + best["lvl"] + RST)
@@ -319,14 +295,14 @@ def main():
         net_type = get_net()
         total_keys = len(vless) + len(ss)
         print(PUR + "="*70 + RST)
-        print(PUR + "|   VPN KEY FINDER - ACCURATE VERSION     |" + RST)
+        print(PUR + "|      VPN KEY FINDER - FAST VERSION      |" + RST)
         print(PUR + "-"*70 + RST)
         print("  Network : " + CYN + net_type + RST)
         print("  Keys Loaded: " + GRN + str(total_keys) + RST)
         print(PUR + "-"*70 + RST)
         print("  [1] Load All Sources")
-        print("  [2] Show VLESS Servers (Real Ping & Country)")
-        print("  [3] Show SS Servers (Real Ping & Country)")
+        print("  [2] Show VLESS Servers")
+        print("  [3] Show SS Servers")
         print("  [4] Find Best Server")
         print("  [5] My Favorites")
         print("  [6] Open Facebook Page")
@@ -342,9 +318,9 @@ def main():
         elif choice == "1":
             vless, ss = load_all()
         elif choice == "2":
-            scan_and_show(vless, "VLESS SERVERS - FASTEST FIRST", 10)
+            scan_and_show(vless, "VLESS SERVERS - FASTEST FIRST", 15)
         elif choice == "3":
-            scan_and_show(ss, "SS SERVERS - FASTEST FIRST", 10)
+            scan_and_show(ss, "SS SERVERS - FASTEST FIRST", 15)
         elif choice == "4":
             best_for_me(vless + ss)
         elif choice == "5":
