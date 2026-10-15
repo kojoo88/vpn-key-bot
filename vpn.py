@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import urllib.request
 import base64
 import socket
 import time
@@ -17,6 +18,9 @@ RST = "\033[0m"
 
 def clear():
     os.system("clear")
+
+# ================== CONFIG ==================
+B64_URL = "https://shadowmere.xyz/api/b64sub/"
 
 # ================== EXTRACT IP & PORT ==================
 def extract_ip_port(url):
@@ -40,7 +44,7 @@ def extract_ip_port(url):
     except:
         return None, None
 
-# ================== REAL PING TEST ==================
+# ================== PING TEST ==================
 def ping_server(host, port=443, timeout=2):
     if not host:
         return False, 999, "No IP", 0
@@ -65,114 +69,124 @@ def ping_server(host, port=443, timeout=2):
         return False, 999, "Offline", 0
 
 def get_country(text):
-    codes = ["SG", "US", "JP", "KR", "HK", "TW", "UK", "DE", "NL", "CA", "AU", "IN", "TH", "MY", "FR", "IT", "ES", "BR", "FI", "SE", "PL", "CH", "IE", "NL", "AT", "BE", "DK", "NO"]
+    codes = ["SG", "US", "JP", "KR", "HK", "TW", "UK", "DE", "NL", "CA", "AU", "IN", "TH", "MY", "FR", "IT", "ES", "BR", "FI", "SE", "PL", "CH", "IE", "AT", "BE", "DK", "NO", "NZ", "ZA", "RU"]
     text_upper = text.upper()
     for c in codes:
         if c in text_upper:
             return c
     return "??"
 
-# ================== DECODE & PARSE ==================
-def decode_b64_data(b64_text):
-    try:
-        decoded = base64.b64decode(b64_text).decode("utf-8", errors="ignore")
-        lines = decoded.splitlines()
-        keys = []
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("ss://"):
-                ip, port = extract_ip_port(line)
-                keys.append({
-                    "country": get_country(line),
-                    "url": line,
-                    "ip": ip,
-                    "port": port
-                })
-        return keys
-    except Exception as e:
-        print(f"{RED}Decode Error: {e}{RST}")
-        return []
-
 # ================== MAIN ==================
 def main():
-    clear()
-    print(PUR + "="*60 + RST)
-    print(PUR + "|    🚀 SHADOWMERE B64 - VPN KEY FINDER   |" + RST)
-    print(PUR + "="*60 + RST)
-    
-    print(f"\n{CYN}📋 လမ်းညွှန်:{RST}")
-    print(f"  1. ဘရောက်ဆာဖွင့် → https://shadowmere.xyz/api/b64sub/ ကိုသွားပါ")
-    print(f"  2. စာသားအားလုံး ကူးယူပါ")
-    print(f"  3. ဒီမှာ Paste လုပ်ပါ → ပြီးရင် Enter နှစ်ခုနှိပ်ပါ\n")
-    
-    print(f"{PUR}▼ B64 စာသားကို ဒီမှာ ကူးထည့်ပါ ▼{RST}")
-    lines = []
     while True:
-        try:
-            l = input()
-            if not l:
-                break
-            lines.append(l)
-        except:
+        clear()
+        print(PUR + "="*60 + RST)
+        print(PUR + "|   🚀 SHADOWMERE B64 - KEY FINDER        |" + RST)
+        print(PUR + "="*60 + RST)
+        print(f"  [1] Load & Show All Keys")
+        print(f"  [2] Load + Test Ping + Sort")
+        print(f"  [0] Exit")
+        print(PUR + "="*60 + RST)
+        
+        choice = input("\n  ရွေးပါ -> ")
+        
+        if choice == "0":
+            print("\n  Bye! 👋\n")
             break
-    
-    b64_text = "".join(lines).strip()
-    if not b64_text:
-        print(f"\n{RED}❌ စာသားမရှိပါ။ ပြန်စပါ။{RST}")
-        time.sleep(1.5)
-        return
-    
-    print(f"\n{GRN}⏳ ကုဒ်ဖွင့်နေသည်...{RST}")
-    keys = decode_b64_data(b64_text)
-    
-    if not keys:
-        print(f"{RED}❌ ကီးမတွေ့ပါ။ စာသားမှန်ကန်မှုစစ်ပါ။{RST}")
-        input(f"\n ပြန်ရန် Enter...")
-        return
-    
-    print(f"{GRN}✅ စုစုပေါင်း {len(keys)} ခု တွေ့ရှိခဲ့သည်!{RST}")
-    input(f" ဆက်ရန် Enter...")
-    
-    # Test ping and sort
-    clear()
-    print(PUR + "="*70 + RST)
-    print(PUR + "|       📡 တကယ့် Ping တိုင်းနေသည်...         |" + RST)
-    print(PUR + "-"*70 + RST)
-    
-    results = []
-    total = len(keys)
-    for i, k in enumerate(keys, 1):
-        print(f"  တိုင်းနေ: {i}/{total}", end="\r")
-        ok, ms, lvl, sc = ping_server(k["ip"], k["port"])
-        if ok and sc > 0:
-            k["ms"] = ms
-            k["lvl"] = lvl
-            k["sc"] = sc
-            results.append(k)
-    
-    results.sort(key=lambda x: x["ms"])
-    
-    print(f"\n\n{GRN}✅ အလုပ်လုပ်သူ {len(results)} ခု တွေ့ရှိခဲ့{RST}")
-    print(PUR + "="*70 + RST)
-    
-    for idx, s in enumerate(results, 1):
-        stars = "*"*s["sc"] + "-"*(5-s["sc"])
-        print(f"\n{PUR}[{idx}] {s['country']}{RST}  |  IP: {CYN}{s.get('ip', 'N/A')}{RST}")
-        print(f"      Ping: {CYN}{s['ms']}ms{RST}  |  {stars}  {GRN}{s['lvl']}{RST}")
-        print(f"      Port: {s.get('port', 'N/A')}")
-        print(f"{WHT}{s['url']}{RST}")
-        print(PUR + "-"*70 + RST)
-    
-    input(f"\n  ပြီးပါပြီ။ Exit ရန် Enter...")
+        
+        elif choice == "1" or choice == "2":
+            clear()
+            print(f"{CYN}⏳ လင့်ခ်ဖွင့်နေသည်...{RST}")
+            try:
+                req = urllib.request.Request(B64_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+                with urllib.request.urlopen(req) as r:
+                    b64_content = r.read().decode("utf-8", errors="ignore")
+            except Exception as e:
+                print(f"{RED}❌ လင့်ခ်မဖွင့်နိုင်ပါ: {e}{RST}")
+                print(f"{YEL}💡 အကြံပြု- ဘရောက်ဆာမှာ {B64_URL} ကိုဖွင့်ပါ{RST}")
+                input("  ပြန်ရန် Enter...")
+                continue
+            
+            print(f"{GRN}✅ ဒေတာရရှိပြီ၊ ဖွင့်နေသည်...{RST}")
+            
+            try:
+                decoded = base64.b64decode(b64_content).decode("utf-8", errors="ignore")
+            except Exception as e:
+                print(f"{RED}❌ ဖွင့်၍မရပါ: {e}{RST}")
+                input("  ပြန်ရန် Enter...")
+                continue
+            
+            lines = decoded.splitlines()
+            keys = []
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("ss://"):
+                    ip, port = extract_ip_port(line)
+                    keys.append({
+                        "country": get_country(line),
+                        "url": line,
+                        "ip": ip,
+                        "port": port
+                    })
+            
+            if not keys:
+                print(f"{RED}❌ ကီးမတွေ့ပါ{RST}")
+                input("  ပြန်ရန် Enter...")
+                continue
+            
+            print(f"{GRN}✅ စုစုပေါင်း {len(keys)} ခု တွေ့ရှိခဲ့သည်!{RST}")
+            input("  ဆက်ရန် Enter...")
+            
+            if choice == "1":
+                clear()
+                print(PUR + "="*70 + RST)
+                print(PUR + "|        📋 ကီးအားလုံးပြသခြင်း             |" + RST)
+                print(PUR + "="*70 + RST)
+                for idx, s in enumerate(keys, 1):
+                    print(f"\n{PUR}[{idx}] {s['country']}{RST}")
+                    print(f"{WHT}{s['url']}{RST}")
+                    print(PUR + "-"*70 + RST)
+                input("\n  ပြီးပါပြီ။ ပြန်ရန် Enter...")
+            
+            else:
+                clear()
+                print(PUR + "="*70 + RST)
+                print(PUR + "|       📡 Ping တိုင်းနေသည်...              |" + RST)
+                print(PUR + "-"*70 + RST)
+                results = []
+                total = len(keys)
+                for i, k in enumerate(keys, 1):
+                    print(f"  တိုင်းနေ: {i}/{total}", end="\r")
+                    ok, ms, lvl, sc = ping_server(k["ip"], k["port"])
+                    if ok and sc > 0:
+                        k["ms"] = ms
+                        k["lvl"] = lvl
+                        k["sc"] = sc
+                        results.append(k)
+                
+                results.sort(key=lambda x: x["ms"])
+                print(f"\n\n{GRN}✅ အလုပ်လုပ်သူ {len(results)} ခု တွေ့ရှိခဲ့{RST}")
+                print(PUR + "="*70 + RST)
+                
+                for idx, s in enumerate(results, 1):
+                    stars = "*"*s["sc"] + "-"*(5-s["sc"])
+                    print(f"\n{PUR}[{idx}] {s['country']}{RST}  |  Ping: {CYN}{s['ms']}ms{RST}  |  {stars}  {GRN}{s['lvl']}{RST}")
+                    print(f"{WHT}{s['url']}{RST}")
+                    print(PUR + "-"*70 + RST)
+                
+                input("\n  ပြီးပါပြီ။ ပြန်ရန် Enter...")
+        
+        else:
+            print(f"\n{RED}မှားနေတယ်၊ ပြန်ရွေးပါ{RST}")
+            time.sleep(1)
 
 if __name__ == "__main__":
     try:
-        while True:
-            main()
+        main()
     except KeyboardInterrupt:
         clear()
-        print(f"\n\n  {GRN}ပြီးပါပြီ။ Bye! 👋{RST}\n")
+        print("\n\n  Bye!\n")
         sys.exit(0)
-            
+        
